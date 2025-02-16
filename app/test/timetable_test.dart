@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timetutor/classes/classes.dart';
-import 'package:timetutor/extensions/datetime.dart';
+import 'package:timetutor/extensions/extensions.dart';
 
 void main() {
   test("Test timetable json parsing. Timetable object to json", () {
@@ -11,13 +11,13 @@ void main() {
               endTime: DateTimeHM.fromHM(hour: 9, minute: 45)),
         ],
         days: Days(monday: [
-          "PHP",
-          "AI",
-          "J2EE",
+          "PHP".toSubject(),
+          "AI".toSubject(),
+          "J2EE".toSubject(),
         ], tuesday: [], wednesday: [], thursday: [
-          "AI",
-          "PHP",
-          "J2EE"
+          "AI".toSubject(),
+          "PHP".toSubject(),
+          "J2EE".toSubject(),
         ], friday: [], saturday: [], sunday: []));
     expect(t.toJson(), {
       "timings": [
@@ -27,10 +27,18 @@ void main() {
         }
       ],
       "days": {
-        "monday": ["PHP", "AI", "J2EE"],
+        "monday": [
+          {"name": "PHP"},
+          {"name": "AI"},
+          {"name": "J2EE"}
+        ],
         "tuesday": [],
         "wednesday": [],
-        "thursday": ["AI", "PHP", "J2EE"],
+        "thursday": [
+          {"name": "AI"},
+          {"name": "PHP"},
+          {"name": "J2EE"}
+        ],
         "friday": [],
         "saturday": [],
         "sunday": [],
@@ -47,17 +55,25 @@ void main() {
         }
       ],
       "days": {
-        "monday": ["PHP", "AI", "J2EE"],
+        "monday": [
+          {"name": "PHP"},
+          {"name": "AI"},
+          {"name": "J2EE"}
+        ],
         "tuesday": [],
         "wednesday": [],
-        "thursday": ["AI", "PHP", "J2EE"],
+        "thursday": [
+          {"name": "PHP"},
+          {"name": "AI"},
+          {"name": "J2EE"}
+        ],
         "friday": [],
         "saturday": [],
         "sunday": [],
       }
     });
-    expect(t.days.monday, ["PHP", "AI", "J2EE"]);
-    expect(t.days.thursday, ["AI", "PHP", "J2EE"]);
+    expect(t.days.monday[0].name, "PHP");
+    expect(t.days.thursday[2].name, "J2EE");
 
     expect(t.timings.length, 1);
     expect(t.timings[0].startTime.hour, 9);

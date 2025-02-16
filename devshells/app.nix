@@ -29,6 +29,27 @@ devshell.mkShell {
       name = "JAVA_HOME";
       value = jdk.home;
     }
+    {
+      name ="CHROME_EXECUTABLE";
+      value = "${pkgs.chromium}/bin/chromium";
+    }
+  ];
+  commands = [
+    {
+      help = "run build runner (needed for json serializable)";
+      name = "brb";
+      command = "flutter pub run build_runner build --delete-conflicting-outputs";
+    }
+    {
+      help = "builds and runs for web";
+      name = "web";
+      command = "flutter run -d chrome";
+    }
+    {
+      help = "runs tests";
+      name = "tests";
+      command = "flutter test";
+    }
   ];
   packages = [
     android-sdk

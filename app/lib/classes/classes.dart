@@ -14,12 +14,31 @@ class Timing {
   Timing({required this.startTime, required this.endTime});
 }
 
+@JsonSerializable()
+class Subject {
+  final String name;
+
+  Subject({required this.name});
+
+  factory Subject.fromJson(Map<String, dynamic> json) =>
+      _$SubjectFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SubjectToJson(this);
+}
+
+class Period {
+  final Subject subject;
+  final Timing timing;
+
+  Period({required this.subject, required this.timing});
+}
+
 abstract class TimeTable {}
 
 @JsonSerializable(explicitToJson: true)
 class StandardTimeTable extends TimeTable {
   final List<Timing> timings;
-  final Days<List<String>> days;
+  final Days<List<Subject>> days;
 
   StandardTimeTable({required this.timings, required this.days});
 
@@ -65,10 +84,10 @@ class Days<T> {
     Map<String, dynamic> json,
     T Function(Object? json) fromJsonT,
   ) =>
-      _$DaysMapFromJson(json, fromJsonT);
+      _$DaysFromJson(json, fromJsonT);
 
   Map<String, dynamic> toJson(Object Function(T value) toJsonT) =>
-      _$DaysMapToJson(this, toJsonT);
+      _$DaysToJson(this, toJsonT);
 
   List<(Day, T)> get asList => [
         (Day.monday, monday),

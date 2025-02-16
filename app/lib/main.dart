@@ -6,6 +6,7 @@ import 'package:timetutor/globals.dart';
 import 'package:timetutor/pages/auth.dart';
 import 'package:timetutor/pages/home.dart';
 import 'package:timetutor/pages/profile_creator.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +28,8 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'TimeTutor',
-      theme: FlexThemeData.dark(scheme: FlexScheme.amber),
+      theme: FlexThemeData.dark(
+          scheme: FlexScheme.amber, textTheme: GoogleFonts.poppinsTextTheme()),
       home: const ImmediatePage(title: 'TimeTutor'),
     );
   }
