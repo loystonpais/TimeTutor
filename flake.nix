@@ -65,6 +65,7 @@
 
         # For the app development (Flutter)
         devShells.app = import ./devshells/app.nix { inherit pkgs; inherit inputs; };
+        devShells.server = import ./devshells/server.nix { inherit pkgs; inherit inputs; };
       }
     );
 }
