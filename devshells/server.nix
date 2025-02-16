@@ -6,7 +6,7 @@ with pkgs;
 devshell.mkShell {
   name = "Rust server";
   motd = ''
-    Rust server using rocket
+    Rust server using rocketf
   '';
   env = [
     {
@@ -17,5 +17,5 @@ devshell.mkShell {
   commands = [
 
   ];
-  packages = [ cargo rustc gcc clippy rustfmt pkg-config ];
+  packages = [ cargo rustc gcc clippy rustfmt pkg-config rust-analyzer ];
 }
