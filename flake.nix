@@ -6,17 +6,24 @@
     devshell.url = "github:numtide/devshell";
     flake-utils.url = "github:numtide/flake-utils";
     android.url = "github:tadfisher/android-nixpkgs";
+    rust-overlay.url = "github:oxalica/rust-overlay";
   };
 
-  outputs = { self, nixpkgs, devshell, flake-utils, android }@inputs:
+  outputs = {
+    self,
+    nixpkgs,
+    devshell,
+    flake-utils,
+    android,
+    rust-overlay,
+  } @ inputs:
     {
       overlay = final: prev: {
         inherit (self.packages.${final.system}) android-sdk android-studio;
       };
     }
-    //
-    flake-utils.lib.eachSystem [ "aarch64-darwin" "x86_64-darwin" "x86_64-linux" ] (system:
-      let
+    // flake-utils.lib.eachSystem ["aarch64-darwin" "x86_64-darwin" "x86_64-linux"] (
+      system: let
         inherit (nixpkgs) lib;
         pkgs = import nixpkgs {
           inherit system;
@@ -24,48 +31,63 @@
           overlays = [
             devshell.overlays.default
             self.overlay
+            rust-overlay.overlays.default
           ];
         };
-      in
-      {
-        packages = {
-          android-sdk = android.sdk.${system} (sdkPkgs: with sdkPkgs; [
-            # Useful packages for building and testing.
-            build-tools-33-0-1
-            cmdline-tools-latest
-            #! No need of emulator for now
-            # emulator
-            platform-tools
-            platforms-android-35
-            platforms-android-34
+      in {
+        packages =
+          {
+            android-sdk = android.sdk.${system} (sdkPkgs:
+              with sdkPkgs;
+                [
+                  cmdline-tools-latest
 
-            # Other useful packages for a development environment.
-            # ndk-26-1-10909125
-            # skiaparser-3
-            # sources-android-35
-          ]
-          ++ lib.optionals (system == "aarch64-darwin") [
-            # system-images-android-35-google-apis-arm64-v8a
-            # system-images-android-35-google-apis-playstore-arm64-v8a
-          ]
-          ++ lib.optionals (system == "x86_64-darwin" || system == "x86_64-linux") [
-            # system-images-android-35-google-apis-x86-64
-            # system-images-android-35-google-apis-playstore-x86-64
-          ]);
+                  #! No need of emulator for now
+                  # emulator
 
-          flutter = pkgs.flutter;
-        } // lib.optionalAttrs (system == "x86_64-linux") {
-          # Android Studio in nixpkgs is currently packaged for x86_64-linux only.
-          #! Android studio is not needed for building flutter apps
-          # android-studio = pkgs.androidStudioPackages.stable;
-          # android-studio = pkgs.androidStudioPackages.beta;
-          # android-studio = pkgs.androidStudioPackages.preview;
-          # android-studio = pkgs.androidStudioPackage.canary;
-        };
+                  platform-tools
+
+                  # Useful packages for building and testing.
+                  build-tools-34-0-0
+
+                  # Platforms
+                  platforms-android-35
+                  platforms-android-34
+
+                  # Other useful packages for a development environment.
+                  # ndk-26-1-10909125
+                  # skiaparser-3
+                  # sources-android-35
+                ]
+                ++ lib.optionals (system == "aarch64-darwin") [
+                  # system-images-android-35-google-apis-arm64-v8a
+                  # system-images-android-35-google-apis-playstore-arm64-v8a
+                ]
+                ++ lib.optionals (system == "x86_64-darwin" || system == "x86_64-linux") [
+                  # system-images-android-35-google-apis-x86-64
+                  # system-images-android-35-google-apis-playstore-x86-64
+                ]);
+
+            flutter = pkgs.flutter;
+          }
+          // lib.optionalAttrs (system == "x86_64-linux") {
+            # Android Studio in nixpkgs is currently packaged for x86_64-linux only.
+            #! Android studio is not needed for building flutter apps
+            # android-studio = pkgs.androidStudioPackages.stable;
+            # android-studio = pkgs.androidStudioPackages.beta;
+            # android-studio = pkgs.androidStudioPackages.preview;
+            # android-studio = pkgs.androidStudioPackage.canary;
+          };
 
         # For the app development (Flutter)
-        devShells.app = import ./devshells/app.nix { inherit pkgs; inherit inputs; };
-        devShells.server = import ./devshells/server.nix { inherit pkgs; inherit inputs; };
+        devShells.app = import ./devshells/app.nix {
+          inherit pkgs;
+          inherit inputs;
+        };
+        devShells.server = import ./devshells/server.nix {
+          inherit pkgs;
+          inherit inputs;
+        };
       }
     );
 }

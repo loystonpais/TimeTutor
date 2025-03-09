@@ -4,11 +4,13 @@ import 'package:timetutor/extensions/extensions.dart';
 
 void main() {
   test("Test timetable json parsing. Timetable object to json", () {
-    StandardTimeTable t = StandardTimeTable(
+    StandardTimetable t = StandardTimetable(
         timings: [
           Timing(
-              startTime: DateTimeHM.fromHM(hour: 9, minute: 0),
-              endTime: DateTimeHM.fromHM(hour: 9, minute: 45)),
+              startTime:
+                  TimeTutorExtensionsOnDateTime.fromHM(hour: 9, minute: 0),
+              endTime:
+                  TimeTutorExtensionsOnDateTime.fromHM(hour: 9, minute: 45)),
         ],
         days: Days(monday: [
           "PHP".toSubject(),
@@ -47,7 +49,7 @@ void main() {
   });
 
   test("Test timetable json parsing. From json to timetable object", () {
-    StandardTimeTable t = StandardTimeTable.fromJson({
+    StandardTimetable t = StandardTimetable.fromJson({
       "timings": [
         {
           "startTime": "-0001-11-30T09:00:00.000",

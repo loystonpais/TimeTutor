@@ -2,10 +2,10 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_auth_ui/supabase_auth_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:timetutor/globals.dart';
-import 'package:timetutor/pages/auth.dart';
-import 'package:timetutor/pages/home.dart';
-import 'package:timetutor/pages/profile_creator.dart';
+import 'package:timetutor/widgets/loading.dart';
+import 'package:timetutor/widgets/pages/auth.dart';
+import 'package:timetutor/widgets/pages/home.dart';
+import 'package:timetutor/widgets/pages/profile_creator.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 Future<void> main() async {
@@ -29,7 +29,7 @@ class App extends StatelessWidget {
     return MaterialApp(
       title: 'TimeTutor',
       theme: FlexThemeData.dark(
-          scheme: FlexScheme.amber, textTheme: GoogleFonts.poppinsTextTheme()),
+          scheme: FlexScheme.barossa, textTheme: GoogleFonts.oswaldTextTheme()),
       home: const ImmediatePage(title: 'TimeTutor'),
     );
   }
@@ -58,17 +58,19 @@ class _ImmediatePageState extends State<ImmediatePage> {
             return FutureBuilder(
               // Single query instead of stream
               future: Supabase.instance.client
-                  .from("users")
+                  .from("profiles")
                   .select()
                   .eq("id", session.user.id)
-                  .single(),
+                  .maybeSingle(),
               builder: (context, snapshot) {
+                print(snapshot);
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Loading();
                 }
 
                 // Check if profile exists
                 if (snapshot.hasData && snapshot.data != null) {
+                  print("This worked");
                   return HomePage();
                 } else {
                   return ProfileCreatorPage();

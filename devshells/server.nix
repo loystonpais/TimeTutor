@@ -6,16 +6,20 @@ with pkgs;
 devshell.mkShell {
   name = "Rust server";
   motd = ''
-    Rust server using rocketf
+    Rust server using rocket
   '';
-  env = [
-    {
-      name = "RUST_SRC_PATH";
-      value = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
-    }
-  ];
+  env = [{
+    name = "RUST_SRC_PATH";
+    value = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+  }];
   commands = [
 
   ];
-  packages = [ cargo rustc gcc clippy rustfmt pkg-config rust-analyzer ];
+  packages = [
+    pkg-config
+    (pkgs.rust-bin.stable.latest.default.override {
+      extensions = [ "rust-src" "cargo" "rustc" ];
+    })
+    rust-analyzer
+  ];
 }

@@ -1,39 +1,40 @@
-abstract class Id<T> {
+import 'package:json_annotation/json_annotation.dart';
+
+class Id<T> {
   final T data;
 
   Id(this.data);
 }
 
-abstract class SupabaseObject<T> {
-  final Id id;
+class SupabaseObject {
+  final Id<String> id;
 
-  SupabaseObject(this.id);
+  SupabaseObject({required this.id});
 }
 
-abstract class User extends SupabaseObject {
-  final String firstName;
-  final String lastName;
-
-  User(super.id, this.firstName, this.lastName);
-
-  List<Class> getGuidingClasses();
-}
-
-abstract class Class {
+class UserProfile extends SupabaseObject {
   final String name;
 
-  User getGuide();
+  UserProfile({required super.id, required this.name});
 
-  List<User> getStudents();
-
-  Class(this.name);
+  // List<Class> getGuidingClasses();
 }
 
-abstract class Institution {
+class Class extends SupabaseObject {
+  final String name;
+
+  // User getGuide();
+
+  // List<User> getStudents();
+
+  Class({required super.id, required this.name});
+}
+
+class Institution extends SupabaseObject {
   final String name;
   final bool verified;
 
-  List<Class> getClasses();
+  // List<Class> getClasses();
 
-  Institution(this.name, this.verified);
+  Institution({required super.id, required this.name, required this.verified});
 }

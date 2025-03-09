@@ -24,19 +24,29 @@ Map<String, dynamic> _$SubjectToJson(Subject instance) => <String, dynamic>{
       'name': instance.name,
     };
 
-StandardTimeTable _$StandardTimeTableFromJson(Map<String, dynamic> json) =>
-    StandardTimeTable(
-      timings: (json['timings'] as List<dynamic>)
-          .map((e) => Timing.fromJson(e as Map<String, dynamic>))
-          .toList(),
+Period _$PeriodFromJson(Map<String, dynamic> json) => Period(
+      subject: Subject.fromJson(json['subject'] as Map<String, dynamic>),
+      timing: Timing.fromJson(json['timing'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$PeriodToJson(Period instance) => <String, dynamic>{
+      'subject': instance.subject,
+      'timing': instance.timing,
+    };
+
+StandardTimetable _$StandardTimetableFromJson(Map<String, dynamic> json) =>
+    StandardTimetable(
       days: Days<List<Subject>>.fromJson(
           json['days'] as Map<String, dynamic>,
           (value) => (value as List<dynamic>)
               .map((e) => Subject.fromJson(e as Map<String, dynamic>))
               .toList()),
+      timings: (json['timings'] as List<dynamic>)
+          .map((e) => Timing.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
 
-Map<String, dynamic> _$StandardTimeTableToJson(StandardTimeTable instance) =>
+Map<String, dynamic> _$StandardTimetableToJson(StandardTimetable instance) =>
     <String, dynamic>{
       'timings': instance.timings.map((e) => e.toJson()).toList(),
       'days': instance.days.toJson(
