@@ -1,37 +1,36 @@
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
-import 'package:timetutor/classes/classes.dart';
+import 'package:timetutor/models/misc.dart';
 import 'package:timetutor/globals.dart';
 import 'package:timetutor/extensions/extensions.dart';
 import 'dart:async';
 
 class TimetableCarouselSlider extends StatefulWidget {
+  final DateTime Function() time;
   final StandardTimetable timetable;
-  final CarouselOptions carouselOptions;
+  final CarouselOptions? carouselOptions;
   final Duration updateDuration;
   final bool editable;
+  final bool currentDayOnly;
+  final bool showDayName;
+  final String Function(Day) dayName;
   final Function(StandardTimetable timetable) onEdit;
 
   TimetableCarouselSlider({
     super.key,
+    DateTime Function()? time,
     required this.timetable,
     this.editable = false,
     required this.onEdit,
-    CarouselOptions? carouselOptions,
+    this.currentDayOnly = false,
+    this.showDayName = true,
+    this.carouselOptions,
+    String Function(Day)? dayName,
     Duration? updateDuration,
-  })  : carouselOptions = carouselOptions ??
-            CarouselOptions(
-              height: 100,
-              aspectRatio: 16 / 9,
-              viewportFraction: 0.4,
-              autoPlay: true,
-              autoPlayAnimationDuration: const Duration(milliseconds: 800),
-              autoPlayCurve: Curves.fastOutSlowIn,
-              enlargeCenterPage: true,
-              enlargeFactor: 0.1,
-              scrollDirection: Axis.horizontal,
-            ),
-        updateDuration = updateDuration ?? Duration(seconds: 3);
+  })  : updateDuration = updateDuration ?? Duration(seconds: 3),
+        time = time ?? (() => DateTime.now()),
+        dayName = dayName ?? ((day) => day.name.capitalize);
 
   @override
   State<TimetableCarouselSlider> createState() =>
@@ -63,7 +62,7 @@ class _TimetableCarouselSliderState extends State<TimetableCarouselSlider> {
 
   @override
   Widget build(BuildContext context) {
-    final DateTime now = DateTime.now();
+    final DateTime now = widget.time();
     final TimeOfDay tod = TimeOfDay(hour: now.hour, minute: now.minute);
 
     final StandardTimetable timetable = widget.timetable;
@@ -85,22 +84,25 @@ class _TimetableCarouselSliderState extends State<TimetableCarouselSlider> {
         if (dayWithPeriods.sunday.isEmpty) SizedBox(height: 30),
         Column(
           children: widget.timetable.dayWithPeriods.asList
-              .where((item) => item.$2.isNotEmpty)
+              .where((item) =>
+                  item.$2.isNotEmpty &&
+                  (widget.currentDayOnly ? item.$1 == currentDay : true))
               .map((item) {
             final (day, periods) = item;
             return Column(
               children: [
-                Text(
-                  day.name,
-                  style: TextStyle(
-                    color: day == currentDay
-                        ? Theme.of(context).primaryColor
-                        : null,
+                if (widget.showDayName)
+                  Text(
+                    widget.dayName(day),
+                    style: TextStyle(
+                      color: day == currentDay
+                          ? Theme.of(context).primaryColor
+                          : null,
+                    ),
                   ),
-                ),
                 PeriodCarouselSlider(
                   periods: periods,
-                  highlightIndex: day == currentDay ? currentPeriodPos : null,
+                  highlightPeriod: day == currentDay ? currentPeriod : null,
                   carouselOptions: widget.carouselOptions,
                   editable: widget.editable,
                   onEdit: (period) {},
@@ -114,27 +116,46 @@ class _TimetableCarouselSliderState extends State<TimetableCarouselSlider> {
   }
 }
 
-/// A stateless widget to display a carousel of periods for a specific day.
-class PeriodCarouselSlider extends StatelessWidget {
+class PeriodCarouselSlider extends StatefulWidget {
+  final DateTime Function() time;
+
   final List<Period> periods;
-  final int? highlightIndex;
+  final Period? highlightPeriod;
   final CarouselOptions carouselOptions;
   final bool editable;
   final Function(Period newPeriod) onEdit;
 
-  const PeriodCarouselSlider({
+  PeriodCarouselSlider({
     super.key,
     required this.periods,
-    required this.carouselOptions,
+    DateTime Function()? time,
+    CarouselOptions? carouselOptions,
     required this.editable,
     required this.onEdit,
-    this.highlightIndex,
-  });
+    this.highlightPeriod,
+  })  : carouselOptions = carouselOptions ??
+            CarouselOptions(
+              height: 100,
+              aspectRatio: 16 / 9,
+              viewportFraction: 0.4,
+              autoPlay: true,
+              autoPlayAnimationDuration: const Duration(milliseconds: 800),
+              autoPlayCurve: Curves.fastOutSlowIn,
+              enlargeCenterPage: true,
+              enlargeFactor: 0.1,
+              scrollDirection: Axis.horizontal,
+            ),
+        time = time ?? (() => DateTime.now());
 
+  @override
+  State<PeriodCarouselSlider> createState() => _PeriodCarouselSliderState();
+}
+
+class _PeriodCarouselSliderState extends State<PeriodCarouselSlider> {
   @override
   Widget build(BuildContext context) {
     return CarouselSlider(
-      items: List.generate(periods.length, (index) {
+      items: List.generate(widget.periods.length, (index) {
         return SizedBox(
           width: 100,
           child: FittedBox(
@@ -142,14 +163,14 @@ class PeriodCarouselSlider extends StatelessWidget {
             child: Material(
               child: InkWell(
                 onDoubleTap: () async {
-                  if (!editable) return;
+                  if (!widget.editable) return;
                   await showDialog(
                     context: context,
                     builder: (BuildContext context) {
-                      Period period = periods[index];
+                      Period period = widget.periods[index];
                       String name = period.subject.name;
                       return AlertDialog(
-                        title: Text("Edit period subject"),
+                        title: const Text("Edit period subject"),
                         content: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -164,10 +185,10 @@ class PeriodCarouselSlider extends StatelessWidget {
                                 Period newPeriod = Period(
                                     subject: Subject(name: name),
                                     timing: period.timing);
-                                onEdit(newPeriod);
+                                widget.onEdit(newPeriod);
                                 Navigator.pop(context);
                               },
-                              child: Text("Save"),
+                              child: const Text("Save"),
                             )
                           ],
                         ),
@@ -176,33 +197,33 @@ class PeriodCarouselSlider extends StatelessWidget {
                   );
                 },
                 child: Container(
-                  decoration: BoxDecoration(),
+                  decoration: const BoxDecoration(),
                   child: Column(
                     children: [
                       Text(
-                        "${index + 1}/${periods.length}",
-                        style: TextStyle(fontSize: 13),
+                        "${index + 1}/${widget.periods.length}",
+                        style: const TextStyle(fontSize: 13),
                       ),
                       Text(
-                        periods[index].subject.name,
-                        style:
-                            (highlightIndex != null && index == highlightIndex)
-                                ? Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium!
-                                    .copyWith(
+                        widget.periods[index].subject.name,
+                        style: (widget.highlightPeriod != null &&
+                                widget.periods[index] == widget.highlightPeriod)
+                            ? Theme.of(context)
+                                .textTheme
+                                .headlineMedium!
+                                .copyWith(
+                                color: Theme.of(context).primaryColor,
+                                shadows: [
+                                  Shadow(
                                     color: Theme.of(context).primaryColor,
-                                    shadows: [
-                                      Shadow(
-                                        color: Theme.of(context).primaryColor,
-                                        blurRadius: 10,
-                                      )
-                                    ],
+                                    blurRadius: 10,
                                   )
-                                : Theme.of(context).textTheme.headlineMedium!,
+                                ],
+                              )
+                            : Theme.of(context).textTheme.headlineMedium!,
                       ),
                       Text(
-                        periods[index].timing.toString(),
+                        widget.periods[index].timing.toString(),
                         style: const TextStyle(fontSize: 10),
                       ),
                     ],
@@ -213,7 +234,7 @@ class PeriodCarouselSlider extends StatelessWidget {
           ),
         );
       }).toList(),
-      options: carouselOptions,
+      options: widget.carouselOptions,
     );
   }
 }

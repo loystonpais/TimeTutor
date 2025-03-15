@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:timetutor/classes/classes.dart';
+import 'package:timetutor/models/misc.dart';
 import 'package:intl/intl.dart';
 
 extension TimetutorExtensionsOnString on String {

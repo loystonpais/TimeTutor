@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:timetutor/classes/classes.dart';
+import 'package:timetutor/models/misc.dart';
 import 'package:timetutor/extensions/extensions.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'dart:async';
 
 class TimetablePeriodCountdown extends StatefulWidget {
+  final DateTime Function() time;
   final StandardTimetable timetable;
   final Duration updateDuration;
 
   TimetablePeriodCountdown({
     super.key,
+    DateTime Function()? time,
     required this.timetable,
     Duration? updateDuration,
-  }) : updateDuration = updateDuration ?? Duration(seconds: 1);
+  })  : updateDuration = updateDuration ?? Duration(seconds: 1),
+        time = time ?? (() => DateTime.now());
 
   @override
   State<TimetablePeriodCountdown> createState() =>
@@ -45,7 +48,7 @@ class _TimetablePeriodCountdownState extends State<TimetablePeriodCountdown> {
 
   @override
   Widget build(BuildContext context) {
-    final DateTime now = DateTime.now();
+    final DateTime now = widget.time();
     final DateTime yesterday = now.subtract(const Duration(days: 1));
     final TimeOfDay tod = TimeOfDay(hour: now.hour, minute: now.minute);
 

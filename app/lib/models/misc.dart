@@ -1,9 +1,12 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/foundation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-part 'classes.g.dart';
+part 'misc.g.dart';
 
 @JsonSerializable()
+@freezed
 class Timing {
   final DateTime startTime;
   final DateTime endTime;
@@ -25,6 +28,16 @@ class Timing {
 
     return "${formatTimeOfDay(startTime)}-${formatTimeOfDay(endTime)}";
   }
+
+  @override
+  bool operator ==(Object other) {
+    return other is Timing &&
+        other.startTime == startTime &&
+        other.endTime == endTime;
+  }
+
+  @override
+  int get hashCode => Object.hash(startTime, endTime);
 }
 
 @JsonSerializable()
@@ -37,6 +50,14 @@ class Subject {
       _$SubjectFromJson(json);
 
   Map<String, dynamic> toJson() => _$SubjectToJson(this);
+
+  @override
+  bool operator ==(Object other) {
+    return other is Subject && other.name == name;
+  }
+
+  @override
+  int get hashCode => name.hashCode;
 }
 
 @JsonSerializable()
@@ -49,6 +70,16 @@ class Period {
   factory Period.fromJson(Map<String, dynamic> json) => _$PeriodFromJson(json);
 
   Map<String, dynamic> toJson() => _$PeriodToJson(this);
+
+  @override
+  bool operator ==(Object other) {
+    return other is Period &&
+        other.subject == subject &&
+        other.timing == timing;
+  }
+
+  @override
+  int get hashCode => Object.hash(subject, timing);
 }
 
 abstract class TimeTable {}
@@ -93,6 +124,32 @@ class StandardTimetable extends TimeTable {
     final day = days.getDayFromDateInt(n);
     day.map((e) {});
   }*/
+
+  @override
+  bool operator ==(Object other) {
+    return other is StandardTimetable &&
+        listEquals(other.timings, timings) &&
+        listEquals(other.days.sunday, days.sunday) &&
+        listEquals(other.days.monday, days.monday) &&
+        listEquals(other.days.tuesday, days.tuesday) &&
+        listEquals(other.days.wednesday, days.wednesday) &&
+        listEquals(other.days.thursday, days.thursday) &&
+        listEquals(other.days.friday, days.friday) &&
+        listEquals(other.days.saturday, days.saturday);
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      Object.hashAll(timings),
+      Object.hashAll([
+        days.sunday,
+        days.monday,
+        days.tuesday,
+        days.wednesday,
+        days.thursday,
+        days.friday,
+        days.saturday,
+      ]));
 }
 
 enum Day {

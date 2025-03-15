@@ -1,15 +1,20 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
+
 import 'package:supabase_auth_ui/supabase_auth_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:timetutor/models/settings.dart';
 import 'package:timetutor/widgets/loading.dart';
 import 'package:timetutor/widgets/pages/auth.dart';
 import 'package:timetutor/widgets/pages/home.dart';
-import 'package:timetutor/widgets/pages/profile_creator.dart';
+import 'package:timetutor/widgets/pages/profile_editor.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:timetutor/globals.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await notificationsPlugin.initialize(initSettings);
 
   await Supabase.initialize(
       url: 'https://vjqchnayhjfnuqjwyvcw.supabase.co',
@@ -20,16 +25,31 @@ Future<void> main() async {
   runApp(const App());
 }
 
-class App extends StatelessWidget {
+class App extends StatefulWidget {
   const App({super.key});
 
-  // This widget is the root of your application.
+  @override
+  State<App> createState() => AppState();
+}
+
+class AppState extends State<App> {
+  @override
+  void initState() {
+    super.initState();
+    materialPageSetState = () => setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'TimeTutor',
-      theme: FlexThemeData.dark(
-          scheme: FlexScheme.barossa, textTheme: GoogleFonts.oswaldTextTheme()),
+      theme: appSettings.darkTheme
+          ? FlexThemeData.dark(
+              scheme: FlexScheme.values.byName(appSettings.themeName),
+              textTheme: GoogleFonts.oswaldTextTheme())
+          : FlexThemeData.light(
+              scheme: FlexScheme.values.byName(appSettings.themeName),
+              textTheme: GoogleFonts.oswaldTextTheme()),
       home: const ImmediatePage(title: 'TimeTutor'),
     );
   }
@@ -69,11 +89,30 @@ class _ImmediatePageState extends State<ImmediatePage> {
                 }
 
                 // Check if profile exists
-                if (snapshot.hasData && snapshot.data != null) {
+                if (snapshot.hasData) {
                   print("This worked");
+                  final profile = snapshot.data!;
+
+                  if (profile["app_settings"] != null) {
+                    appSettings = AppSettings.fromJson(profile["app_settings"]);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      materialPageSetState();
+                    });
+                  }
+
                   return HomePage();
                 } else {
-                  return ProfileCreatorPage();
+                  print("wtf");
+                  return ProfileEditorPage(
+                    createIfDoesNotExist: true,
+                    onProfileCreated: () {
+                      /*Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => HomePage()),
+                      );*/
+                      setState(() {});
+                    },
+                  );
                 }
               },
             );

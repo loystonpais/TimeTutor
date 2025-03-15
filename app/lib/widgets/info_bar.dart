@@ -1,53 +1,69 @@
 import 'package:flutter/material.dart';
 
 class InfoBar extends StatelessWidget {
-  final String infoText;
+  final Widget child;
   final VoidCallback onTap;
-  final Color color;
+  final Color? color;
 
   const InfoBar({
     super.key,
-    required this.infoText,
+    required this.child,
     required this.onTap,
-    required this.color,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Using primary and secondary colors from the theme
-    final Color primaryDark = Theme.of(context).primaryColorDark;
-    final Color secondary = Theme.of(context).colorScheme.secondary;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final surfaceColor = theme.colorScheme.surface;
+
+    final baseColor = color ?? theme.primaryColor;
+
+    // Calculate blended background colors
+    final baseBlend = Color.alphaBlend(
+      baseColor.withAlpha(isDark ? 0x1A : 0x0D),
+      surfaceColor,
+    );
+
+    final gradientColors = [
+      Color.alphaBlend(baseColor.withAlpha(0x99), surfaceColor),
+      Color.alphaBlend(baseColor.withAlpha(0x4D), surfaceColor),
+    ];
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 5),
       child: Material(
         borderRadius: BorderRadius.circular(10),
         elevation: 6,
-        shadowColor: Colors.black.withOpacity(0.2),
-        color: color.withOpacity(0.3),
+        shadowColor: Colors.black.withAlpha(isDark ? 0x66 : 0x33),
+        color: baseBlend,
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
-          splashColor: secondary.withOpacity(0.4),
           onTap: onTap,
+          splashFactory: InkSparkle.splashFactory,
+          splashColor: baseColor.withAlpha(0x33),
+          highlightColor: Colors.transparent,
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
-              // Adding a gradient that blends two colors
               gradient: LinearGradient(
-                colors: [
-                  primaryDark.withOpacity(0.8),
-                  secondary.withOpacity(0.8),
-                ],
+                colors: gradientColors,
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              // Using overlay blend mode to mix the gradient and any background color
-              backgroundBlendMode: BlendMode.overlay,
+              backgroundBlendMode:
+                  isDark ? BlendMode.softLight : BlendMode.multiply,
             ),
-            child: Text(
-              infoText,
-              style: Theme.of(context).textTheme.bodyMedium,
+            child: DefaultTextStyle.merge(
+              style: TextStyle(
+                color: Color.alphaBlend(
+                  theme.colorScheme.onSurface.withAlpha(0xCC),
+                  baseBlend,
+                ),
+              ),
+              child: child,
             ),
           ),
         ),
