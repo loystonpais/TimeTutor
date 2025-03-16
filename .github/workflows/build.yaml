@@ -16,27 +16,16 @@ jobs:
         with:
           flutter-version: 3.27.1
 
-      - name: Install dependencies
-        run: flutter pub get
-        working-directory: app
-
-      - name: Run tests
-        run: flutter test
-        working-directory: app
-
-      - name: Build APK
-        run: flutter build apk
-        working-directory: app
-
-      - name: Build App Bundle
-        run: flutter build appbundle
-        working-directory: app
+      - run: flutter pub get
+      - run: flutter test
+      - run: flutter build apk
+      - run: flutter build appbundle
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            app/build/app/outputs/flutter-apk/app-release.apk
-            app/build/app/outputs/bundle/release/app-release.aab
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
