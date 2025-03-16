@@ -1,3 +1,0 @@
-{
-    //"rust-analyzer.linkedProjects": ["${workspaceFolder}/server/Cargo.toml"],
-}

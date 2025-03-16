@@ -1,9 +1,0 @@
-{
-  "lsp": {
-    "rust-analyzer": {
-      "binary": {
-        "path": "/nix/store/45mx5i61mnqvd8dprzhsyhjl4fdlb772-Rust-server-dir/bin/rust-analyzer"
-      }
-    }
-  }
-}
