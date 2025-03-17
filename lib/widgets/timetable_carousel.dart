@@ -33,8 +33,7 @@ class TimetableCarouselSlider extends StatefulWidget {
         dayName = dayName ?? ((day) => day.name.capitalize);
 
   @override
-  State<TimetableCarouselSlider> createState() =>
-      _TimetableCarouselSliderState();
+  State<TimetableCarouselSlider> createState() => _TimetableCarouselSliderState();
 }
 
 class _TimetableCarouselSliderState extends State<TimetableCarouselSlider> {
@@ -67,8 +66,7 @@ class _TimetableCarouselSliderState extends State<TimetableCarouselSlider> {
 
     final StandardTimetable timetable = widget.timetable;
     final dayWithPeriods = timetable.dayWithPeriods;
-    final List<Period> currentDayPeriods =
-        dayWithPeriods.getDayFromDateInt(now.weekday);
+    final List<Period> currentDayPeriods = dayWithPeriods.getDayFromDateInt(now.weekday);
     final Day currentDay = now.weekday.toDay();
 
     final (
@@ -84,9 +82,7 @@ class _TimetableCarouselSliderState extends State<TimetableCarouselSlider> {
         if (dayWithPeriods.sunday.isEmpty) SizedBox(height: 30),
         Column(
           children: widget.timetable.dayWithPeriods.asList
-              .where((item) =>
-                  item.$2.isNotEmpty &&
-                  (widget.currentDayOnly ? item.$1 == currentDay : true))
+              .where((item) => item.$2.isNotEmpty && (widget.currentDayOnly ? item.$1 == currentDay : true))
               .map((item) {
             final (day, periods) = item;
             return Column(
@@ -95,9 +91,7 @@ class _TimetableCarouselSliderState extends State<TimetableCarouselSlider> {
                   Text(
                     widget.dayName(day),
                     style: TextStyle(
-                      color: day == currentDay
-                          ? Theme.of(context).primaryColor
-                          : null,
+                      color: day == currentDay ? Theme.of(context).primaryColor : null,
                     ),
                   ),
                 PeriodCarouselSlider(
@@ -164,32 +158,41 @@ class _PeriodCarouselSliderState extends State<PeriodCarouselSlider> {
               child: InkWell(
                 onDoubleTap: () async {
                   if (!widget.editable) return;
+
+                  Period period = widget.periods[index];
+                  TextEditingController nameController = TextEditingController(text: period.subject.name);
+
                   await showDialog(
                     context: context,
                     builder: (BuildContext context) {
-                      Period period = widget.periods[index];
-                      String name = period.subject.name;
                       return AlertDialog(
-                        title: const Text("Edit period subject"),
+                        title: const Text("Edit Period"),
                         content: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             TextFormField(
-                              initialValue: name,
-                              onChanged: (value) {
-                                name = value;
-                              },
+                              controller: nameController,
+                              decoration: const InputDecoration(labelText: "Subject Name"),
                             ),
+                            const SizedBox(height: 10),
                             ElevatedButton(
                               onPressed: () {
-                                Period newPeriod = Period(
-                                    subject: Subject(name: name),
-                                    timing: period.timing);
-                                widget.onEdit(newPeriod);
-                                Navigator.pop(context);
+                                if (nameController.text.trim().isNotEmpty) {
+                                  Period updatedPeriod = Period(
+                                    subject: Subject(name: nameController.text.trim()),
+                                    timing: period.timing,
+                                  );
+
+                                  setState(() {
+                                    widget.periods[index] = updatedPeriod;
+                                  });
+
+                                  widget.onEdit(updatedPeriod);
+                                  Navigator.pop(context);
+                                }
                               },
                               child: const Text("Save"),
-                            )
+                            ),
                           ],
                         ),
                       );
@@ -206,12 +209,8 @@ class _PeriodCarouselSliderState extends State<PeriodCarouselSlider> {
                       ),
                       Text(
                         widget.periods[index].subject.name,
-                        style: (widget.highlightPeriod != null &&
-                                widget.periods[index] == widget.highlightPeriod)
-                            ? Theme.of(context)
-                                .textTheme
-                                .headlineMedium!
-                                .copyWith(
+                        style: (widget.highlightPeriod != null && widget.periods[index] == widget.highlightPeriod)
+                            ? Theme.of(context).textTheme.headlineMedium!.copyWith(
                                 color: Theme.of(context).primaryColor,
                                 shadows: [
                                   Shadow(

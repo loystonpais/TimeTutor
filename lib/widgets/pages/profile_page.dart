@@ -20,18 +20,8 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  Future<
-      ({
-        Map<String, dynamic> profile,
-        Map<String, dynamic> class_,
-        Map<String, dynamic> institution
-      })> _fetchData() async {
-    final profile = await client
-        .from("profiles")
-        .select()
-        .eq("id", client.auth.currentUser!.id)
-        .limit(1)
-        .maybeSingle();
+  Future<({Map<String, dynamic> profile, Map<String, dynamic> class_, Map<String, dynamic> institution})> _fetchData() async {
+    final profile = await client.from("profiles").select().eq("id", client.auth.currentUser!.id).limit(1).maybeSingle();
 
     if (profile == null) {
       throw Exception("Your profile doesn't exist!");
@@ -39,15 +29,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
     final String joinedClass = profile['joined_class'];
 
-    final class_ =
-        await client.from("classes").select().eq("id", joinedClass).single();
+    final class_ = await client.from("classes").select().eq("id", joinedClass).single();
 
-    Map<String, dynamic> institution = await client
-        .from("institutions")
-        .select()
-        .eq("id", class_["institution"])
-        .limit(1)
-        .single();
+    Map<String, dynamic> institution = await client.from("institutions").select().eq("id", class_["institution"]).limit(1).single();
 
     return (profile: profile, class_: class_, institution: institution);
   }
@@ -85,18 +69,12 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: RandomAvatar(
                       profile["avatar_string"],
                       trBackground: appSettings.monoColor,
-                      theme: (appSettings.monoColor)
-                          ? SvgTheme(
-                              currentColor: Theme.of(context).primaryColor)
-                          : SvgTheme(),
-                      colorFilter: appSettings.monoColor
-                          ? ColorFilter.mode(
-                              Theme.of(context).primaryColorLight,
-                              BlendMode.modulate)
-                          : null,
+                      theme: (appSettings.monoColor) ? SvgTheme(currentColor: Theme.of(context).primaryColor) : SvgTheme(),
+                      colorFilter: appSettings.monoColor ? ColorFilter.mode(Theme.of(context).primaryColorLight, BlendMode.modulate) : null,
                     ),
                   ),
                   const SizedBox(height: 20),
+                  Text('@${profile["username"]}', style: Theme.of(context).textTheme.bodySmall),
                   Text(
                     profile["name"],
                     style: Theme.of(context).textTheme.headlineMedium,
@@ -109,8 +87,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       Center(
                           child: Row(
                         children: [
-                          Text(
-                              "Joined ${class_['name']} of ${institution['name']}"),
+                          Text("Joined ${class_['name']} of ${institution['name']}"),
                           SizedBox(width: 10),
                           if (institution["verified"]) Icon(Icons.verified)
                         ],
@@ -121,8 +98,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     onTap: () async {
                       await Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) => ProfileEditorPage()),
+                        MaterialPageRoute(builder: (context) => ProfileEditorPage()),
                       );
                       setState(() {});
                     },
@@ -137,11 +113,90 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   InfoBar(
                     onTap: () async {
+                      await showDialog(
+                        context: context,
+                        builder: (context) {
+                          final _formKey = GlobalKey<FormState>();
+                          final TextEditingController _institutionController = TextEditingController();
+
+                          return AlertDialog(
+                            title: Center(child: Text("Create Institution")),
+                            content: SizedBox(
+                              //height: MediaQuery.of(context).size.width * 0.7,
+                              width: MediaQuery.of(context).size.height * 0.3,
+                              child: Form(
+                                key: _formKey,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    TextFormField(
+                                      controller: _institutionController,
+                                      decoration: InputDecoration(labelText: "Institution Name"),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return "Please enter an institution name";
+                                        }
+                                        if (value.length > 50) {
+                                          return "Institution name must be under 50 characters";
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  if (_formKey.currentState!.validate()) {
+                                    client
+                                        .from("institutions")
+                                        .insert({
+                                          "name": _institutionController.text,
+                                          "creator": client.auth.currentUser!.id,
+                                        })
+                                        .select()
+                                        .single()
+                                        .then((value) {
+                                          Navigator.of(context).pop();
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('Created new instituiton named "${_institutionController.text}"')));
+                                          client
+                                              .from("classes")
+                                              .insert({"name": "EXAMPLE CLASS", "institution": value["id"]}).then((value) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(content: Text('Created example classes for "${_institutionController.text}"')));
+                                          });
+                                        }, onError: (error) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(SnackBar(content: Text('Failed to create the institution')));
+                                        });
+                                  }
+                                },
+                                child: Text("Create"),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+
+                      setState(() {});
+                    },
+                    color: appSettings.monoColor ? null : Colors.pink,
+                    child: Row(
+                      children: [
+                        Icon(Icons.add),
+                        SizedBox(width: 12),
+                        Text('Create new Institution'),
+                      ],
+                    ),
+                  ),
+                  InfoBar(
+                    onTap: () async {
                       await Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                InstituionClassSelectorPage()),
+                        MaterialPageRoute(builder: (context) => InstituionClassSelectorPage()),
                       );
                       setState(() {});
                     },

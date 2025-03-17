@@ -24,8 +24,7 @@ import 'package:timetutor/widgets/pages/institution_class_selector.dart';
 import 'package:timetutor/widgets/pages/profile_page.dart';
 import 'package:timetutor/widgets/timetable_carousel.dart';
 import 'package:timetutor/widgets/timetable_period_countdown.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart'
-    as fln;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart' as fln;
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -37,17 +36,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  /*Widget carousel = TimetableCarousel(
-    //timetable: timetable,
-    editable: true,
-    onEdit: (editedJson) async {
-      await Supabase.instance.client
-          .from("users")
-          .update({"timetable": editedJson}).eq(
-              "id", Supabase.instance.client.auth.currentUser!.id);
-    },
-  );*/
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,18 +45,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<
-      ({
-        Map<String, dynamic> profile,
-        Map<String, dynamic> class_,
-        Map<String, dynamic> institution
-      })> _fetchData() async {
-    final profile = await client
-        .from("profiles")
-        .select()
-        .eq("id", client.auth.currentUser!.id)
-        .limit(1)
-        .maybeSingle();
+  Future<({Map<String, dynamic> profile, Map<String, dynamic> class_, Map<String, dynamic> institution})> _fetchData() async {
+    final profile = await client.from("profiles").select().eq("id", client.auth.currentUser!.id).limit(1).maybeSingle();
 
     if (profile == null) {
       throw Exception("Your profile doesn't exist!");
@@ -85,12 +63,7 @@ class _HomePageState extends State<HomePage> {
         )
         .single();
 
-    Map<String, dynamic> institution = await client
-        .from("institutions")
-        .select()
-        .eq("id", class_["institution"])
-        .limit(1)
-        .single();
+    Map<String, dynamic> institution = await client.from("institutions").select().eq("id", class_["institution"]).limit(1).single();
 
     return (profile: profile, class_: class_, institution: institution);
   }
@@ -107,8 +80,7 @@ class _HomePageState extends State<HomePage> {
           final (:profile, :class_, :institution) = snapshot.data!;
           print(institution);
 
-          StandardTimetable timetable =
-              StandardTimetable.fromJson(class_["timetable"]);
+          StandardTimetable timetable = StandardTimetable.fromJson(class_["timetable"]);
 
           /*if (profile["joined_class"] == null) {
             // this means the user just created an account and
@@ -130,18 +102,21 @@ class _HomePageState extends State<HomePage> {
                 //widthFactor: 0.9,
                 heightFactor: 0.9,
                 child: TimetableCarouselSlider(
-                    editable: true, timetable: timetable, onEdit: (json) {})),
+                  editable: institution["creator"] == client.auth.currentUser!.id,
+                  timetable: timetable,
+                  onEdit: (json) {
+                    print("After edit ${json.toJson()}");
+                  },
+                )),
           );
 
-          headerWidget =
-              Center(child: TimetablePeriodCountdown(timetable: timetable));
+          headerWidget = Center(child: TimetablePeriodCountdown(timetable: timetable));
 
           final DateTime now = DateTime.now();
           final tod = now.toTimeOfDay();
 
           final dayWithPeriods = timetable.dayWithPeriods;
-          final List<Period> currentDayPeriods =
-              dayWithPeriods.getDayFromDateInt(now.weekday);
+          final List<Period> currentDayPeriods = dayWithPeriods.getDayFromDateInt(now.weekday);
           final Day currentDay = now.weekday.toDay();
 
           return DraggableHome(
@@ -153,21 +128,13 @@ class _HomePageState extends State<HomePage> {
                     icon: RandomAvatar(
                       profile["avatar_string"],
                       trBackground: appSettings.monoColor,
-                      theme: (appSettings.monoColor)
-                          ? SvgTheme(
-                              currentColor: Theme.of(context).primaryColor)
-                          : SvgTheme(),
-                      colorFilter: appSettings.monoColor
-                          ? ColorFilter.mode(
-                              Theme.of(context).primaryColorLight,
-                              BlendMode.modulate)
-                          : null,
+                      theme: (appSettings.monoColor) ? SvgTheme(currentColor: Theme.of(context).primaryColor) : SvgTheme(),
+                      colorFilter: appSettings.monoColor ? ColorFilter.mode(Theme.of(context).primaryColorLight, BlendMode.modulate) : null,
                       height: 35,
                       width: 35,
                     ),
                     onPressed: () async {
-                      await Navigator.push(context,
-                          MaterialPageRoute(builder: (context) {
+                      await Navigator.push(context, MaterialPageRoute(builder: (context) {
                         return ProfilePage();
                       }));
                       setState(() {});
@@ -201,8 +168,7 @@ class _HomePageState extends State<HomePage> {
                         Center(
                             child: Row(
                           children: [
-                            Text(
-                                "Joined ${class_['name']} of ${institution['name']}"),
+                            Text("Joined ${class_['name']} of ${institution['name']}"),
                             SizedBox(width: 10),
                             if (institution["verified"]) Icon(Icons.verified)
                           ],
@@ -214,9 +180,7 @@ class _HomePageState extends State<HomePage> {
                       onTap: () async {
                         await Navigator.push(
                           context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  InstituionClassSelectorPage()),
+                          MaterialPageRoute(builder: (context) => InstituionClassSelectorPage()),
                         );
                         setState(() {});
                       },
@@ -229,32 +193,30 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                     ),
-                    InfoBar(
-                      onTap: () async {
-                        final picker = ImagePicker();
-                        final XFile? img =
-                            await picker.pickImage(source: ImageSource.gallery);
-                        print(img);
-                        if (img != null) {
-                          print(img.path);
-                        }
-                      },
-                      color: appSettings.monoColor ? null : Colors.green,
-                      child: Row(
-                        children: [
-                          Icon(Icons.admin_panel_settings),
-                          SizedBox(width: 12),
-                          Text('Edit the timetable'),
-                        ],
+                    if (client.auth.currentUser!.id == institution["creator"])
+                      InfoBar(
+                        onTap: () async {
+                          // final picker = ImagePicker();
+                          // final XFile? img = await picker.pickImage(source: ImageSource.gallery);
+                          // print(img);
+                          // if (img != null) {
+                          //   print(img.path);
+                          // }
+                        },
+                        color: appSettings.monoColor ? null : Colors.green,
+                        child: Row(
+                          children: [
+                            Icon(Icons.admin_panel_settings),
+                            SizedBox(width: 12),
+                            Text('Edit the timetable'),
+                          ],
+                        ),
                       ),
-                    ),
                     InfoBar(
                       onTap: () {
                         setState(() {});
                       },
-                      color: appSettings.monoColor
-                          ? null
-                          : Colors.deepPurpleAccent,
+                      color: appSettings.monoColor ? null : Colors.deepPurpleAccent,
                       child: Row(
                         children: [
                           Icon(Icons.refresh),
@@ -266,10 +228,11 @@ class _HomePageState extends State<HomePage> {
                     InfoBar(
                       onTap: () {
                         notificationsPlugin.show(
-                            0,
-                            "TimeTutor",
-                            "Hi, This is timetutor!",
-                            const fln.NotificationDetails());
+                          0,
+                          "TimeTutor",
+                          "Hi, This is timetutor!",
+                          notificationDetails,
+                        );
                       },
                       color: appSettings.monoColor ? null : Colors.pinkAccent,
                       child: Row(

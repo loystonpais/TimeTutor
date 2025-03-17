@@ -5,6 +5,7 @@ import 'package:supabase_auth_ui/supabase_auth_ui.dart';
 import 'package:timetutor/globals.dart';
 import 'package:timetutor/widgets/centered_page.dart';
 import 'package:timetutor/widgets/loading.dart';
+import 'dart:math';
 
 class ProfileEditorPage extends StatefulWidget {
   final bool createIfDoesNotExist;
@@ -17,31 +18,28 @@ class ProfileEditorPage extends StatefulWidget {
 
   @override
   State<ProfileEditorPage> createState() => _ProfileEditorPageState();
+
+  static String getRandomString(int length) {
+    const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890_';
+    Random _rnd = Random();
+    return String.fromCharCodes(Iterable.generate(length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
+  }
 }
 
 class _ProfileEditorPageState extends State<ProfileEditorPage> {
   final _formKey = GlobalKey<FormState>();
   final nameController = TextEditingController();
+  final usernameController = TextEditingController();
   final avatarStringController = TextEditingController();
 
-  Future<
-      ({
-        Map<String, dynamic> profile,
-        Map<String, dynamic> class_,
-        Map<String, dynamic> institution
-      })> _fetchData() async {
-    var profile = await client
-        .from("profiles")
-        .select()
-        .eq("id", client.auth.currentUser!.id)
-        .limit(1)
-        .maybeSingle();
+  Future<({Map<String, dynamic> profile, Map<String, dynamic> class_, Map<String, dynamic> institution})> _fetchData() async {
+    var profile = await client.from("profiles").select().eq("id", client.auth.currentUser!.id).limit(1).maybeSingle();
 
     if (widget.createIfDoesNotExist) {
       print("creating");
       profile = await client
           .from("profiles")
-          .insert({"id": client.auth.currentUser!.id})
+          .insert({"id": client.auth.currentUser!.id, "username": ProfileEditorPage.getRandomString(19)})
           .select()
           .limit(1)
           .maybeSingle();
@@ -53,15 +51,9 @@ class _ProfileEditorPageState extends State<ProfileEditorPage> {
 
     final String joinedClass = profile['joined_class'];
 
-    final class_ =
-        await client.from("classes").select().eq("id", joinedClass).single();
+    final class_ = await client.from("classes").select().eq("id", joinedClass).single();
 
-    Map<String, dynamic> institution = await client
-        .from("institutions")
-        .select()
-        .eq("id", class_["institution"])
-        .limit(1)
-        .single();
+    Map<String, dynamic> institution = await client.from("institutions").select().eq("id", class_["institution"]).limit(1).single();
 
     return (profile: profile, class_: class_, institution: institution);
   }
@@ -90,6 +82,7 @@ class _ProfileEditorPageState extends State<ProfileEditorPage> {
 
             avatarStringController.text = profile["avatar_string"];
             nameController.text = profile["name"];
+            usernameController.text = profile["username"];
 
             return SingleChildScrollView(
               child: Padding(
@@ -103,16 +96,9 @@ class _ProfileEditorPageState extends State<ProfileEditorPage> {
                           child: RandomAvatar(
                             value.text,
                             trBackground: appSettings.monoColor,
-                            theme: (appSettings.monoColor)
-                                ? SvgTheme(
-                                    currentColor:
-                                        Theme.of(context).primaryColor)
-                                : SvgTheme(),
-                            colorFilter: appSettings.monoColor
-                                ? ColorFilter.mode(
-                                    Theme.of(context).primaryColorLight,
-                                    BlendMode.modulate)
-                                : null,
+                            theme: (appSettings.monoColor) ? SvgTheme(currentColor: Theme.of(context).primaryColor) : SvgTheme(),
+                            colorFilter:
+                                appSettings.monoColor ? ColorFilter.mode(Theme.of(context).primaryColorLight, BlendMode.modulate) : null,
                           ),
                         );
                       },
@@ -140,6 +126,32 @@ class _ProfileEditorPageState extends State<ProfileEditorPage> {
                             },
                           ),
                           TextFormField(
+                            controller: usernameController,
+                            decoration: InputDecoration(
+                              hintText: "Enter username",
+                              labelText: "Username",
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return "Username cannot be empty";
+                              }
+
+                              if (value.length < 3) {
+                                return "Username must be at least 3 characters long";
+                              }
+
+                              if (value.length > 20) {
+                                return "Username must be less than 20 characters";
+                              }
+
+                              if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
+                                return "Username can only contain letters, numbers, and underscores";
+                              }
+
+                              return null;
+                            },
+                          ),
+                          TextFormField(
                             controller: nameController,
                             decoration: InputDecoration(
                               hintText: "Enter your name",
@@ -157,24 +169,37 @@ class _ProfileEditorPageState extends State<ProfileEditorPage> {
                             },
                           ),
                           TextButton(
-                              onPressed: () {
+                              onPressed: () async {
                                 if (!_formKey.currentState!.validate()) {
                                   return;
                                 }
+
+                                final String username = usernameController.text;
+
+                                final usernameCheck = await client
+                                    .from("profiles")
+                                    .select()
+                                    .eq("username", username)
+                                    .neq("id", client.auth.currentUser!.id)
+                                    .maybeSingle();
+                                if (usernameCheck != null) {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(SnackBar(content: Text('Username $username is already taken')));
+                                  return;
+                                }
+
                                 client
                                     .from("profiles")
                                     .update({
                                       "name": nameController.text,
-                                      "avatar_string":
-                                          avatarStringController.text,
+                                      "avatar_string": avatarStringController.text,
+                                      "username": username,
                                     })
                                     .eq("id", client.auth.currentUser!.id)
                                     .select()
                                     .then((value) {
                                       ScaffoldMessenger.of(context)
-                                          .showSnackBar(SnackBar(
-                                              content: Text(
-                                                  'Successfully updated the profile')));
+                                          .showSnackBar(SnackBar(content: Text('Successfully updated the profile')));
                                       // POP twice to fully exist the InstitutionClassSelectorPage
                                       //Navigator.of(context).pop();
                                       if (widget.onProfileCreated != null) {
@@ -183,10 +208,7 @@ class _ProfileEditorPageState extends State<ProfileEditorPage> {
                                         Navigator.of(context).pop();
                                       }
                                     }, onError: (error) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(SnackBar(
-                                              content: Text(
-                                                  'Failed to update the profile')));
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update the profile')));
                                     });
                               },
                               child: Text("Done"))
