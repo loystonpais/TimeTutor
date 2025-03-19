@@ -8,7 +8,7 @@ import 'package:timetutor/extensions/extensions.dart';
 import 'package:intl/intl.dart';
 
 class TimetableEditorPage extends StatefulWidget {
-  final StandardTimetable initialTimetable;
+  final Timetable initialTimetable;
   final String classId;
 
   const TimetableEditorPage({
@@ -22,7 +22,7 @@ class TimetableEditorPage extends StatefulWidget {
 }
 
 class _TimetetableEditorPageState extends State<TimetableEditorPage> {
-  late StandardTimetable editedTimetable;
+  late Timetable editedTimetable;
   late Days<List<Subject>> editedDays;
   late List<Timing> editedTimings;
   late Day selectedDay;
@@ -30,14 +30,14 @@ class _TimetetableEditorPageState extends State<TimetableEditorPage> {
   @override
   void initState() {
     super.initState();
-    editedTimetable = StandardTimetable.fromJson(widget.initialTimetable.toJson());
+    editedTimetable = Timetable.fromJson(widget.initialTimetable.toJson());
     editedDays = editedTimetable.days;
     editedTimings = List.from(editedTimetable.timings);
     selectedDay = Day.monday;
   }
 
   Future<void> _saveTimetable() async {
-    final updatedTimetable = StandardTimetable(
+    final updatedTimetable = Timetable(
       days: editedDays,
       timings: editedTimings,
     );
@@ -105,7 +105,7 @@ class _TimetetableEditorPageState extends State<TimetableEditorPage> {
   void _updateDaySubjects(List<Subject> subjects) {
     switch (selectedDay) {
       case Day.monday:
-        editedDays = editedDays.monday(monday: subjects);
+        editedDays = editedDays.copyWith(monday: subjects);
         break;
       case Day.tuesday:
         editedDays = editedDays.copyWith(tuesday: subjects);

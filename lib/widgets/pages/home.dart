@@ -22,9 +22,11 @@ import 'package:timetutor/widgets/info_bar.dart';
 import 'package:timetutor/widgets/loading.dart';
 import 'package:timetutor/widgets/pages/institution_class_selector.dart';
 import 'package:timetutor/widgets/pages/profile_page.dart';
+import 'package:timetutor/widgets/pages/timetable_yaml_editor.dart';
 import 'package:timetutor/widgets/timetable_carousel.dart';
 import 'package:timetutor/widgets/timetable_period_countdown.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart' as fln;
+import 'package:yaml_writer/yaml_writer.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -80,19 +82,38 @@ class _HomePageState extends State<HomePage> {
           final (:profile, :class_, :institution) = snapshot.data!;
           print(institution);
 
-          StandardTimetable timetable = StandardTimetable.fromJson(class_["timetable"]);
+          Timetable timetable;
 
-          /*if (profile["joined_class"] == null) {
-            // this means the user just created an account and
-            // has not selected any class to join
+          try {
+            timetable = Timetable.fromJson(class_["timetable"]);
+          } catch (e) {
             timetable = defaultTimetable;
-          } else if (class_ == null) {
-            // class being null class might have been deleted
-            timetable = defaultTimetable;
-          } else {
-            // class timetable cant be null so no problem
-            timetable = StandardTimetable.fromJson(class_["timetable"]);
-          }*/
+            if (institution["creator"] != client.auth.currentUser!.id) {
+              // not the owner so show default timetable
+              //
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    backgroundColor: Colors.redAccent,
+                    duration: Duration(seconds: 20),
+                    content: Text('Could not load the timetable. Potential cause: Version Mismatch. Falled back to default timetable.')));
+              });
+
+              // setState({})
+            } else {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    backgroundColor: Colors.redAccent,
+                    duration: Duration(seconds: 4),
+                    content: Text(
+                        'Could not load the timetable. Potential cause: Version Mismatch. Updating the timetable to the latest version...')));
+                client.from("classes").update({"timetable": timetable.toJson()}).eq("id", class_["id"]).then((value) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(duration: Duration(seconds: 10), content: Text('Updated the timetable to the latest version.')));
+                      //setState(() {});
+                    });
+              });
+            }
+          }
 
           Widget expandedBody;
           Widget headerWidget;
@@ -115,8 +136,8 @@ class _HomePageState extends State<HomePage> {
           final DateTime now = DateTime.now();
           final tod = now.toTimeOfDay();
 
-          final dayWithPeriods = timetable.dayWithPeriods;
-          final List<Period> currentDayPeriods = dayWithPeriods.getDayFromDateInt(now.weekday);
+          final Days<List<Timed<PeriodWithSubject>>> dayWithPeriods = timetable.dayWithPeriods;
+          final List<Timed<PeriodWithSubject>> currentDayPeriods = dayWithPeriods.getDayFromDateInt(now.weekday);
           final Day currentDay = now.weekday.toDay();
 
           return DraggableHome(
@@ -202,6 +223,11 @@ class _HomePageState extends State<HomePage> {
                           // if (img != null) {
                           //   print(img.path);
                           // }
+
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => TimetableYamlEditor()),
+                          );
                         },
                         color: appSettings.monoColor ? null : Colors.green,
                         child: Row(

@@ -1,13 +1,18 @@
+import 'package:flutter/material.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:supabase_auth_ui/supabase_auth_ui.dart';
+import 'package:timetutor/extensions/extensions.dart';
 
 part 'misc.g.dart';
 
+part 'misc.freezed.dart';
+
 @JsonSerializable()
 @freezed
-class Timing {
+class Timing with _$Timing {
   final DateTime startTime;
   final DateTime endTime;
 
@@ -19,151 +24,214 @@ class Timing {
 
   @override
   String toString() {
-    String formatTimeOfDay(DateTime dt) {
-      final now = DateTime.now();
-      final newDt = DateTime(now.year, now.month, now.day, dt.hour, dt.minute);
-      final format = DateFormat.jm();
-      return format.format(newDt);
+    // String formatTimeOfDay(DateTime dt) {
+    //   final now = DateTime.now();
+    //   final newDt = DateTime(now.year, now.month, now.day, dt.hour, dt.minute);
+    //   final format = DateFormat.jm();
+    //   return format.format(newDt);
+    // }
+
+    return "${startTime.toTimeOfDay().toHumanReadableString()}-${endTime.toTimeOfDay().toHumanReadableString()}";
+  }
+
+  String toHumanReadableString() => toString();
+
+  factory Timing.fromHumanReadableString(String string) {
+    final String start;
+    final String end;
+    try {
+      start = string.split("-")[0];
+      end = string.split("-")[1];
+      print(start);
+    } catch (e) {
+      throw Exception("Unable to parse $string");
     }
 
-    return "${formatTimeOfDay(startTime)}-${formatTimeOfDay(endTime)}";
-  }
+    final TimeOfDay startTod;
+    final TimeOfDay endTod;
 
-  @override
-  bool operator ==(Object other) {
-    return other is Timing &&
-        other.startTime == startTime &&
-        other.endTime == endTime;
-  }
+    try {
+      startTod = start.toTimeOfDayFromHumanReadable();
+      endTod = end.toTimeOfDayFromHumanReadable();
+    } catch (e) {
+      throw Exception("At $string : $e");
+    }
 
-  @override
-  int get hashCode => Object.hash(startTime, endTime);
+    return Timing(startTime: startTod.toDateTime(), endTime: endTod.toDateTime());
+  }
 }
 
-@JsonSerializable()
-class Subject {
-  final String name;
+@Freezed()
+sealed class Subject with _$Subject {
+  const Subject._();
 
-  Subject({required this.name});
+  const factory Subject({required String name}) = _Subject;
 
-  factory Subject.fromJson(Map<String, dynamic> json) =>
-      _$SubjectFromJson(json);
+  factory Subject.fromJson(Map<String, dynamic> json) => _$SubjectFromJson(json);
 
-  Map<String, dynamic> toJson() => _$SubjectToJson(this);
+  factory Subject.fromString(String string) => Subject(name: string);
 
-  @override
-  bool operator ==(Object other) {
-    return other is Subject && other.name == name;
+  Period toPeriod() {
+    return Period.withSubject(this);
   }
-
-  @override
-  int get hashCode => name.hashCode;
 }
 
-@JsonSerializable()
-class Period {
-  final Subject subject;
-  final Timing timing;
+@Freezed(genericArgumentFactories: true)
+sealed class Timed<T> with _$Timed<T> {
+  const factory Timed({required T object, required Timing timing}) = _Timed;
 
-  Period({required this.subject, required this.timing});
+  factory Timed.fromJson(
+    Map<String, dynamic> json,
+    T Function(Object? json) fromJsonT,
+  ) =>
+      _$TimedFromJson(json, fromJsonT);
+
+  @override
+  Map<String, dynamic> toJson(Object? Function(T) toJsonT) => throw UnimplementedError;
+}
+
+@Freezed()
+sealed class Timetable with _$Timetable {
+  const Timetable._();
+
+  const factory Timetable({required List<Timing> timings, required Days<List<Period>> days}) = _Timetable;
+
+  Days<List<Timed<PeriodWithSubject>>> get dayWithPeriods {
+    return Days<List<Timed<PeriodWithSubject>>>(
+      sunday: days.sunday.toTimedPeriods(timings),
+      monday: days.monday.toTimedPeriods(timings),
+      tuesday: days.tuesday.toTimedPeriods(timings),
+      wednesday: days.wednesday.toTimedPeriods(timings),
+      thursday: days.thursday.toTimedPeriods(timings),
+      friday: days.friday.toTimedPeriods(timings),
+      saturday: days.saturday.toTimedPeriods(timings),
+    );
+  }
+
+  factory Timetable.fromJson(Map<String, dynamic> json) => _$TimetableFromJson(json);
+
+  Map<String, dynamic> toEasyJson() {
+    final Map<String, dynamic> easyJson = {};
+
+    easyJson["days"] = days.asList.asMap().map<String, List<String>>(
+          (key, value) => MapEntry(
+            value.$1.small,
+            value.$2.map((e) => Period.humanReadableStringOf(e)).toList(),
+          ),
+        );
+    easyJson["timings"] = timings.map<String>((e) => e.toString()).toList();
+
+    return easyJson;
+  }
+
+  factory Timetable.fromEasyJson(Map<String, dynamic> json) {
+    if (!json.containsKey("timings")) {
+      throw Exception("Failed to parse, no timings are given");
+    }
+
+    List<Timing> timings = [];
+    for (final String timingString in json["timings"]) {
+      print(timingString);
+      timings.add(timingString.toTimingFromHumanReadable());
+    }
+
+    if (!json.containsKey("days")) {
+      throw Exception("Failed to parse, no days are given");
+    }
+
+    // Validate that the "days" value is a Map.
+    final daysJson = json["days"];
+    if (daysJson is! Map<String, dynamic>) {
+      throw Exception("Failed to parse, 'days' should be a map");
+    }
+
+    // Define the allowed day keys.
+    final allowedDays = {
+      Day.sunday.small,
+      Day.monday.small,
+      Day.tuesday.small,
+      Day.wednesday.small,
+      Day.thursday.small,
+      Day.friday.small,
+      Day.saturday.small,
+    };
+
+    // Check for any invalid keys.
+    for (final key in daysJson.keys) {
+      if (!allowedDays.contains(key)) {
+        throw Exception("Invalid day key found in 'days': $key");
+      }
+    }
+
+    var sunday = ((daysJson[Day.sunday.small] as List<dynamic>?)?.cast<String>() ?? <String>[]).map((e) => Period.fromString(e)).toList();
+    var monday = ((daysJson[Day.monday.small] as List<dynamic>?)?.cast<String>() ?? <String>[]).map((e) => Period.fromString(e)).toList();
+    var tuesday = ((daysJson[Day.tuesday.small] as List<dynamic>?)?.cast<String>() ?? <String>[]).map((e) => Period.fromString(e)).toList();
+    var wednesday =
+        ((daysJson[Day.wednesday.small] as List<dynamic>?)?.cast<String>() ?? <String>[]).map((e) => Period.fromString(e)).toList();
+    var thursday =
+        ((daysJson[Day.thursday.small] as List<dynamic>?)?.cast<String>() ?? <String>[]).map((e) => Period.fromString(e)).toList();
+    var friday = ((daysJson[Day.friday.small] as List<dynamic>?)?.cast<String>() ?? <String>[]).map((e) => Period.fromString(e)).toList();
+    var saturday =
+        ((daysJson[Day.saturday.small] as List<dynamic>?)?.cast<String>() ?? <String>[]).map((e) => Period.fromString(e)).toList();
+
+    var days = Days<List<Period>>(
+      sunday: sunday,
+      monday: monday,
+      tuesday: tuesday,
+      wednesday: wednesday,
+      thursday: thursday,
+      friday: friday,
+      saturday: saturday,
+    );
+
+    return Timetable(days: days, timings: timings);
+  }
+}
+
+@freezed
+sealed class Period with _$Period {
+  const factory Period.none() = PeriodNone;
+  const factory Period.withSubject(Subject subject) = PeriodWithSubject;
+  const factory Period.previousCombined() = PeriodPreviousCombined;
 
   factory Period.fromJson(Map<String, dynamic> json) => _$PeriodFromJson(json);
 
-  Map<String, dynamic> toJson() => _$PeriodToJson(this);
-
   @override
-  bool operator ==(Object other) {
-    return other is Period &&
-        other.subject == subject &&
-        other.timing == timing;
+  String toString() {
+    return humanReadableStringOf(this);
   }
 
-  @override
-  int get hashCode => Object.hash(subject, timing);
-}
-
-abstract class TimeTable {}
-
-@JsonSerializable(explicitToJson: true)
-class StandardTimetable extends TimeTable {
-  final List<Timing> timings;
-  final Days<List<Subject>> days;
-
-  Days<List<Period>> get dayWithPeriods {
-    return Days<List<Period>>(
-      sunday: _zipPeriods(days.sunday),
-      monday: _zipPeriods(days.monday),
-      tuesday: _zipPeriods(days.tuesday),
-      wednesday: _zipPeriods(days.wednesday),
-      thursday: _zipPeriods(days.thursday),
-      friday: _zipPeriods(days.friday),
-      saturday: _zipPeriods(days.saturday),
-    );
+  static String humanReadableStringOf(Period period) {
+    if (period is PeriodNone) return "~none";
+    if (period is PeriodPreviousCombined) return "~prev";
+    return (period as PeriodWithSubject).subject.name;
   }
 
-  List<Period> _zipPeriods(List<Subject> subjects) {
-    final length =
-        subjects.length < timings.length ? subjects.length : timings.length;
-    return List.generate(
-      length,
-      (index) => Period(
-        subject: subjects[index],
-        timing: timings[index], // Guaranteed to be within bounds
-      ),
-    );
+  factory Period.fromString(String string) {
+    switch (string) {
+      case "~none":
+        return Period.none();
+      case "~prev":
+        return Period.previousCombined();
+      default:
+        return Period.withSubject(Subject(name: string));
+    }
   }
-
-  StandardTimetable({required this.days, required this.timings});
-
-  factory StandardTimetable.fromJson(Map<String, dynamic> json) =>
-      _$StandardTimetableFromJson(json);
-
-  Map<String, dynamic> toJson() => _$StandardTimetableToJson(this);
-
-  /*List<Period> getPeriodsOf(int n) {
-    final day = days.getDayFromDateInt(n);
-    day.map((e) {});
-  }*/
-
-  @override
-  bool operator ==(Object other) {
-    return other is StandardTimetable &&
-        listEquals(other.timings, timings) &&
-        listEquals(other.days.sunday, days.sunday) &&
-        listEquals(other.days.monday, days.monday) &&
-        listEquals(other.days.tuesday, days.tuesday) &&
-        listEquals(other.days.wednesday, days.wednesday) &&
-        listEquals(other.days.thursday, days.thursday) &&
-        listEquals(other.days.friday, days.friday) &&
-        listEquals(other.days.saturday, days.saturday);
-  }
-
-  @override
-  int get hashCode => Object.hash(
-      Object.hashAll(timings),
-      Object.hashAll([
-        days.sunday,
-        days.monday,
-        days.tuesday,
-        days.wednesday,
-        days.thursday,
-        days.friday,
-        days.saturday,
-      ]));
 }
 
 enum Day {
-  sunday(name: "Sunday", short: "Sun"),
-  monday(name: "Monday", short: "Mon"),
-  tuesday(name: "Tuesday", short: "Tue"),
-  wednesday(name: "Wednesday", short: "Wed"),
-  thursday(name: "Thursday", short: "Thu"),
-  friday(name: "Friday", short: "Fri"),
-  saturday(name: "Saturday", short: "Sat");
+  sunday(name: "Sunday", short: "Sun", small: "sunday"),
+  monday(name: "Monday", short: "Mon", small: "monday"),
+  tuesday(name: "Tuesday", short: "Tue", small: "tuesday"),
+  wednesday(name: "Wednesday", short: "Wed", small: "wednesday"),
+  thursday(name: "Thursday", short: "Thu", small: "thursday"),
+  friday(name: "Friday", short: "Fri", small: "friday"),
+  saturday(name: "Saturday", short: "Sat", small: "saturday");
 
   final String name;
   final String short;
-  const Day({required this.name, required this.short});
+  final String small;
+  const Day({required this.name, required this.short, required this.small});
 
   static Day getDayFromDateTimeInt(int dayNumber) {
     return {
@@ -178,24 +246,19 @@ enum Day {
   }
 }
 
-@JsonSerializable(genericArgumentFactories: true)
-class Days<T> {
-  final T monday;
-  final T tuesday;
-  final T wednesday;
-  final T thursday;
-  final T friday;
-  final T saturday;
-  final T sunday;
+@Freezed(genericArgumentFactories: true)
+sealed class Days<T> with _$Days<T> {
+  const Days._();
 
-  Days(
-      {required this.monday,
-      required this.tuesday,
-      required this.wednesday,
-      required this.thursday,
-      required this.friday,
-      required this.saturday,
-      required this.sunday});
+  factory Days({
+    required T monday,
+    required T tuesday,
+    required T wednesday,
+    required T thursday,
+    required T friday,
+    required T saturday,
+    required T sunday,
+  }) = _Days<T>;
 
   factory Days.fromJson(
     Map<String, dynamic> json,
@@ -203,8 +266,9 @@ class Days<T> {
   ) =>
       _$DaysFromJson(json, fromJsonT);
 
-  Map<String, dynamic> toJson(Object Function(T value) toJsonT) =>
-      _$DaysToJson(this, toJsonT);
+  // This is done to fix a bug with json serializer
+  @override
+  Map<String, dynamic> toJson(Object? Function(T) toJsonT) => throw UnimplementedError;
 
   List<(Day, T)> get asList => [
         (Day.monday, monday),

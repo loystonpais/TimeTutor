@@ -7,8 +7,7 @@ import 'package:timetutor/models/supabase.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 final notificationsPlugin = FlutterLocalNotificationsPlugin();
-final initSettingsAndroid =
-    AndroidInitializationSettings("@mipmap/ic_launcher");
+final initSettingsAndroid = AndroidInitializationSettings("@mipmap/ic_launcher");
 final initSettings = InitializationSettings(android: initSettingsAndroid);
 
 final notificationDetails = NotificationDetails(
@@ -31,87 +30,177 @@ late User authUser;
 
 late UserProfile? userProfile;
 late Class? userJoinedClass;
-late StandardTimetable? joinedClassTimetable;
+late Timetable? joinedClassTimetable;
 late Institution userJoinedInstitution;
 
 AppSettings appSettings = AppSettings();
 
-final StandardTimetable defaultTimetable = StandardTimetable.fromJson({
+final Timetable defaultTimetable = Timetable.fromJson({
   "days": {
     "friday": [
-      {"name": "Welcome"},
-      {"name": "To"},
-      {"name": "TimeTutor"},
-      {"name": "Welcome"},
-      {"name": "To"},
-      {"name": "TimeTutor"}
+      {
+        "subject": {"name": "Welcome"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "To"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "TimeTutor"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "Welcome"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "To"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "TimeTutor"},
+        "runtimeType": "withSubject"
+      }
     ],
     "monday": [
-      {"name": "Join"},
-      {"name": "A"},
-      {"name": "Class"},
-      {"name": "You"},
-      {"name": "Wanna"},
-      {"name": "Join"}
+      {
+        "subject": {"name": "Join"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "A"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "Class"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "You"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "Want To"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "Join"},
+        "runtimeType": "withSubject"
+      }
     ],
     "sunday": [],
     "tuesday": [
-      {"name": "Welcome"},
-      {"name": "To"},
-      {"name": "TimeTutor"},
-      {"name": "Welcome"},
-      {"name": "To"},
-      {"name": "TimeTutor"}
+      {
+        "subject": {"name": "Welcome"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "To"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "TimeTutor"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "Welcome"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "To"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "TimeTutor"},
+        "runtimeType": "withSubject"
+      }
     ],
     "saturday": [
-      {"name": "Join"},
-      {"name": "A"},
-      {"name": "Class"},
-      {"name": "You"},
-      {"name": "Wanna"},
-      {"name": "Join"}
+      {
+        "subject": {"name": "Join"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "A"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "Class"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "You"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "Want To"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "Join"},
+        "runtimeType": "withSubject"
+      }
     ],
     "thursday": [
-      {"name": "Welcome"},
-      {"name": "To"},
-      {"name": "TimeTutor"},
-      {"name": "Welcome"},
-      {"name": "To"},
-      {"name": "TimeTutor"}
+      {
+        "subject": {"name": "Welcome"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "To"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "TimeTutor"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "Welcome"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "To"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "TimeTutor"},
+        "runtimeType": "withSubject"
+      }
     ],
     "wednesday": [
-      {"name": "Join"},
-      {"name": "A"},
-      {"name": "Class"},
-      {"name": "You"},
-      {"name": "Wanna"},
-      {"name": "Join"}
-    ],
+      {
+        "subject": {"name": "Join"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "A"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "Class"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "You"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "Want To"},
+        "runtimeType": "withSubject"
+      },
+      {
+        "subject": {"name": "Join"},
+        "runtimeType": "withSubject"
+      }
+    ]
   },
   "timings": [
-    {
-      "endTime": "-0001-11-30T09:50:00.000",
-      "startTime": "-0001-11-30T09:00:00.000"
-    },
-    {
-      "endTime": "-0001-11-30T10:45:00.000",
-      "startTime": "-0001-11-30T09:55:00.000"
-    },
-    {
-      "endTime": "-0001-11-30T11:40:00.000",
-      "startTime": "-0001-11-30T10:50:00.000"
-    },
-    {
-      "endTime": "-0001-11-30T12:35:00.000",
-      "startTime": "-0001-11-30T11:45:00.000"
-    },
-    {
-      "endTime": "-0001-11-30T13:30:00.000",
-      "startTime": "-0001-11-30T12:35:00.000"
-    },
-    {
-      "endTime": "-0001-11-30T14:10:00.000",
-      "startTime": "-0001-11-30T13:30:00.000"
-    }
+    {"endTime": "-0001-11-30T09:50:00.000", "startTime": "-0001-11-30T09:00:00.000"},
+    {"endTime": "-0001-11-30T10:45:00.000", "startTime": "-0001-11-30T09:55:00.000"},
+    {"endTime": "-0001-11-30T11:40:00.000", "startTime": "-0001-11-30T10:50:00.000"},
+    {"endTime": "-0001-11-30T12:35:00.000", "startTime": "-0001-11-30T11:45:00.000"},
+    {"endTime": "-0001-11-30T13:30:00.000", "startTime": "-0001-11-30T12:35:00.000"},
+    {"endTime": "-0001-11-30T14:10:00.000", "startTime": "-0001-11-30T13:30:00.000"}
   ]
 });

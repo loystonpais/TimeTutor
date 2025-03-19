@@ -8,14 +8,14 @@ import 'dart:async';
 
 class TimetableCarouselSlider extends StatefulWidget {
   final DateTime Function() time;
-  final StandardTimetable timetable;
+  final Timetable timetable;
   final CarouselOptions? carouselOptions;
   final Duration updateDuration;
   final bool editable;
   final bool currentDayOnly;
   final bool showDayName;
   final String Function(Day) dayName;
-  final Function(StandardTimetable timetable) onEdit;
+  final Function(Timetable timetable) onEdit;
 
   TimetableCarouselSlider({
     super.key,
@@ -64,9 +64,9 @@ class _TimetableCarouselSliderState extends State<TimetableCarouselSlider> {
     final DateTime now = widget.time();
     final TimeOfDay tod = TimeOfDay(hour: now.hour, minute: now.minute);
 
-    final StandardTimetable timetable = widget.timetable;
+    final Timetable timetable = widget.timetable;
     final dayWithPeriods = timetable.dayWithPeriods;
-    final List<Period> currentDayPeriods = dayWithPeriods.getDayFromDateInt(now.weekday);
+    final List<Timed<PeriodWithSubject>> currentDayPeriods = dayWithPeriods.getDayFromDateInt(now.weekday);
     final Day currentDay = now.weekday.toDay();
 
     final (
@@ -113,11 +113,11 @@ class _TimetableCarouselSliderState extends State<TimetableCarouselSlider> {
 class PeriodCarouselSlider extends StatefulWidget {
   final DateTime Function() time;
 
-  final List<Period> periods;
-  final Period? highlightPeriod;
+  final List<Timed<PeriodWithSubject>> periods;
+  final Timed<PeriodWithSubject>? highlightPeriod;
   final CarouselOptions carouselOptions;
   final bool editable;
-  final Function(Period newPeriod) onEdit;
+  final Function(Timed newPeriod) onEdit;
 
   PeriodCarouselSlider({
     super.key,
@@ -159,14 +159,14 @@ class _PeriodCarouselSliderState extends State<PeriodCarouselSlider> {
                 onDoubleTap: () async {
                   if (!widget.editable) return;
 
-                  Period period = widget.periods[index];
-                  TextEditingController nameController = TextEditingController(text: period.subject.name);
+                  Timed<PeriodWithSubject> period = widget.periods[index];
+                  TextEditingController nameController = TextEditingController(text: period.object.subject.name);
 
                   await showDialog(
                     context: context,
                     builder: (BuildContext context) {
                       return AlertDialog(
-                        title: const Text("Edit Period"),
+                        title: Center(child: Text("Edit Period")),
                         content: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -178,8 +178,8 @@ class _PeriodCarouselSliderState extends State<PeriodCarouselSlider> {
                             ElevatedButton(
                               onPressed: () {
                                 if (nameController.text.trim().isNotEmpty) {
-                                  Period updatedPeriod = Period(
-                                    subject: Subject(name: nameController.text.trim()),
+                                  Timed<PeriodWithSubject> updatedPeriod = Timed(
+                                    object: nameController.text.trim().toPeriod() as PeriodWithSubject,
                                     timing: period.timing,
                                   );
 
@@ -208,7 +208,7 @@ class _PeriodCarouselSliderState extends State<PeriodCarouselSlider> {
                         style: const TextStyle(fontSize: 13),
                       ),
                       Text(
-                        widget.periods[index].subject.name,
+                        widget.periods[index].object.subject.name,
                         style: (widget.highlightPeriod != null && widget.periods[index] == widget.highlightPeriod)
                             ? Theme.of(context).textTheme.headlineMedium!.copyWith(
                                 color: Theme.of(context).primaryColor,

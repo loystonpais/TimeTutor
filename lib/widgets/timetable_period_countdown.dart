@@ -7,7 +7,7 @@ import 'dart:async';
 
 class TimetablePeriodCountdown extends StatefulWidget {
   final DateTime Function() time;
-  final StandardTimetable timetable;
+  final Timetable timetable;
   final Duration updateDuration;
 
   TimetablePeriodCountdown({
@@ -19,8 +19,7 @@ class TimetablePeriodCountdown extends StatefulWidget {
         time = time ?? (() => DateTime.now());
 
   @override
-  State<TimetablePeriodCountdown> createState() =>
-      _TimetablePeriodCountdownState();
+  State<TimetablePeriodCountdown> createState() => _TimetablePeriodCountdownState();
 }
 
 class _TimetablePeriodCountdownState extends State<TimetablePeriodCountdown> {
@@ -52,18 +51,15 @@ class _TimetablePeriodCountdownState extends State<TimetablePeriodCountdown> {
     final DateTime yesterday = now.subtract(const Duration(days: 1));
     final TimeOfDay tod = TimeOfDay(hour: now.hour, minute: now.minute);
 
-    final StandardTimetable timetable = widget.timetable;
+    final Timetable timetable = widget.timetable;
 
     final dayWithPeriods = timetable.dayWithPeriods;
     //print(dayWithPeriods);
 
-    final List<Period> currentDayPeriod =
-        dayWithPeriods.getDayFromDateInt(now.weekday);
+    final List<Timed<PeriodWithSubject>> currentDayPeriod = dayWithPeriods.getDayFromDateInt(now.weekday);
     //print("current day is ${now.weekday}");
-    final List<Period> periods = currentDayPeriod;
-    periods.sort((a, b) => a.timing.startTime
-        .toTimeOfDay()
-        .compareTo(b.timing.endTime.toTimeOfDay()));
+    final List<Timed<PeriodWithSubject>> periods = currentDayPeriod;
+    periods.sort((a, b) => a.timing.startTime.toTimeOfDay().compareTo(b.timing.endTime.toTimeOfDay()));
     //print("Length of the periods is ${periods.length}");
 
     final (
@@ -79,35 +75,25 @@ class _TimetablePeriodCountdownState extends State<TimetablePeriodCountdown> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (currentPeriod != null)
-            Text("${currentPeriodPos + 1}/${periods.length}"),
+          if (currentPeriod != null) Text("${currentPeriodPos + 1}/${periods.length}"),
           SizedBox(
             width: 350,
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                currentPeriod != null
-                    ? currentPeriod.subject.name
-                    : "You're Free",
+                currentPeriod != null ? currentPeriod.object.subject.name : "You're Free",
                 style: Theme.of(context).textTheme.headlineLarge!.copyWith(
                   shadows: [
                     // if (currentSettings.enablePeriodNameShadow)
-                    if (false)
-                      Shadow(
-                          color: Theme.of(context).primaryColor,
-                          blurRadius: 0,
-                          offset: const Offset(2.0, 0))
+                    if (false) Shadow(color: Theme.of(context).primaryColor, blurRadius: 0, offset: const Offset(2.0, 0))
                   ],
                 ),
               ),
             ),
           ),
           Text(
-            currentPeriod != null
-                ? currentPeriod.timing.toString()
-                : "Yup, you heard it right",
-            style:
-                TextStyle(color: Theme.of(context).textTheme.bodyLarge!.color),
+            currentPeriod != null ? currentPeriod.timing.toString() : "Yup, you heard it right",
+            style: TextStyle(color: Theme.of(context).textTheme.bodyLarge!.color),
           ),
           const SizedBox(height: 10),
           if (currentPeriod != null)
@@ -125,9 +111,7 @@ class _TimetablePeriodCountdownState extends State<TimetablePeriodCountdown> {
               barRadius: const Radius.circular(5),
               width: 120.0,
               lineHeight: 3.0,
-              percent: tod.deviation(
-                  from: currentPeriod.timing.startTime.toTimeOfDay(),
-                  to: currentPeriod.timing.endTime.toTimeOfDay()),
+              percent: tod.deviation(from: currentPeriod.timing.startTime.toTimeOfDay(), to: currentPeriod.timing.endTime.toTimeOfDay()),
               animation: true,
               animateFromLastPercent: true,
               animationDuration: 1000,
@@ -146,7 +130,7 @@ class _TimetablePeriodCountdownState extends State<TimetablePeriodCountdown> {
                 )
               else if (nextPeriod != null)
                 Text(
-                  "${nextPeriod.subject.name}"
+                  "${nextPeriod.object.subject.name}"
                   " ${Jiffy.parseFromDateTime(DateTime(now.year, now.month, now.day, nextPeriod.timing.startTime.hour, nextPeriod.timing.startTime.minute)).fromNow()}",
                 )
               else
@@ -154,10 +138,9 @@ class _TimetablePeriodCountdownState extends State<TimetablePeriodCountdown> {
                   "No more periods for today!",
                 ),
               const SizedBox(height: 10),
-              if (/*currentSettings.displayPrevPeriod*/ true &&
-                  prevPeriod != null)
+              if (/*currentSettings.displayPrevPeriod*/ true && prevPeriod != null)
                 Text(
-                  "${prevPeriod.subject.name} was ${Jiffy.parseFromDateTime(DateTime(now.year, now.month, now.day, prevPeriod.timing.startTime.hour, prevPeriod.timing.startTime.minute)).fromNow()}",
+                  "${prevPeriod.object.subject.name} was ${Jiffy.parseFromDateTime(DateTime(now.year, now.month, now.day, prevPeriod.timing.startTime.hour, prevPeriod.timing.startTime.minute)).fromNow()}",
                   style: const TextStyle(fontSize: 12),
                 ),
             ],

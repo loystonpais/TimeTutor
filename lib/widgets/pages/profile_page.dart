@@ -121,62 +121,57 @@ class _ProfilePageState extends State<ProfilePage> {
 
                           return AlertDialog(
                             title: Center(child: Text("Create Institution")),
-                            content: SizedBox(
-                              //height: MediaQuery.of(context).size.width * 0.7,
-                              width: MediaQuery.of(context).size.height * 0.3,
-                              child: Form(
-                                key: _formKey,
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    TextFormField(
-                                      controller: _institutionController,
-                                      decoration: InputDecoration(labelText: "Institution Name"),
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return "Please enter an institution name";
-                                        }
-                                        if (value.length > 50) {
-                                          return "Institution name must be under 50 characters";
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                  ],
-                                ),
+                            content: Form(
+                              key: _formKey,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextFormField(
+                                    controller: _institutionController,
+                                    decoration: InputDecoration(labelText: "Institution Name"),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return "Please enter an institution name";
+                                      }
+                                      if (value.length > 50) {
+                                        return "Institution name must be under 50 characters";
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: 10),
+                                  TextButton(
+                                    onPressed: () {
+                                      if (_formKey.currentState!.validate()) {
+                                        client
+                                            .from("institutions")
+                                            .insert({
+                                              "name": _institutionController.text,
+                                              "creator": client.auth.currentUser!.id,
+                                            })
+                                            .select()
+                                            .single()
+                                            .then((value) {
+                                              Navigator.of(context).pop();
+                                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                                  content: Text('Created new instituiton named "${_institutionController.text}"')));
+                                              client
+                                                  .from("classes")
+                                                  .insert({"name": "EXAMPLE CLASS", "institution": value["id"]}).then((value) {
+                                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                                    content: Text('Created example classes for "${_institutionController.text}"')));
+                                              });
+                                            }, onError: (error) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(SnackBar(content: Text('Failed to create the institution')));
+                                            });
+                                      }
+                                    },
+                                    child: Text("Create"),
+                                  ),
+                                ],
                               ),
                             ),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  if (_formKey.currentState!.validate()) {
-                                    client
-                                        .from("institutions")
-                                        .insert({
-                                          "name": _institutionController.text,
-                                          "creator": client.auth.currentUser!.id,
-                                        })
-                                        .select()
-                                        .single()
-                                        .then((value) {
-                                          Navigator.of(context).pop();
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('Created new instituiton named "${_institutionController.text}"')));
-                                          client
-                                              .from("classes")
-                                              .insert({"name": "EXAMPLE CLASS", "institution": value["id"]}).then((value) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(content: Text('Created example classes for "${_institutionController.text}"')));
-                                          });
-                                        }, onError: (error) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(SnackBar(content: Text('Failed to create the institution')));
-                                        });
-                                  }
-                                },
-                                child: Text("Create"),
-                              ),
-                            ],
                           );
                         },
                       );
