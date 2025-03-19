@@ -24,13 +24,6 @@ class Timing with _$Timing {
 
   @override
   String toString() {
-    // String formatTimeOfDay(DateTime dt) {
-    //   final now = DateTime.now();
-    //   final newDt = DateTime(now.year, now.month, now.day, dt.hour, dt.minute);
-    //   final format = DateFormat.jm();
-    //   return format.format(newDt);
-    // }
-
     return "${startTime.toTimeOfDay().toHumanReadableString()}-${endTime.toTimeOfDay().toHumanReadableString()}";
   }
 
@@ -184,7 +177,10 @@ sealed class Timetable with _$Timetable {
       saturday: saturday,
     );
 
-    return Timetable(days: days, timings: timings);
+    final timetable = Timetable(days: days, timings: timings);
+    final daysWithPeriods = timetable.dayWithPeriods;
+
+    return timetable;
   }
 }
 

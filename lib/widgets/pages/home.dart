@@ -240,7 +240,15 @@ class _HomePageState extends State<HomePage> {
                       ),
                     InfoBar(
                       onTap: () {
+                        // setState(() {});
                         setState(() {});
+
+                        materialPageKey = UniqueKey();
+
+                        // Then trigger the app-level refresh
+                        Future.delayed(Duration.zero, () {
+                          materialPageSetState();
+                        });
                       },
                       color: appSettings.monoColor ? null : Colors.deepPurpleAccent,
                       child: Row(
@@ -251,24 +259,24 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                     ),
-                    InfoBar(
-                      onTap: () {
-                        notificationsPlugin.show(
-                          0,
-                          "TimeTutor",
-                          "Hi, This is timetutor!",
-                          notificationDetails,
-                        );
-                      },
-                      color: appSettings.monoColor ? null : Colors.pinkAccent,
-                      child: Row(
-                        children: [
-                          Icon(Icons.notifications),
-                          SizedBox(width: 12),
-                          Text('Notification Test'),
-                        ],
-                      ),
-                    ),
+                    // InfoBar(
+                    //   onTap: () {
+                    //     notificationsPlugin.show(
+                    //       0,
+                    //       "TimeTutor",
+                    //       "Hi, This is timetutor!",
+                    //       notificationDetails,
+                    //     );
+                    //   },
+                    //   color: appSettings.monoColor ? null : Colors.pinkAccent,
+                    //   child: Row(
+                    //     children: [
+                    //       Icon(Icons.notifications),
+                    //       SizedBox(width: 12),
+                    //       Text('Notification Test'),
+                    //     ],
+                    //   ),
+                    // ),
                   ],
                 ),
               )

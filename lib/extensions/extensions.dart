@@ -70,7 +70,7 @@ extension TimeTutorExtensionsOnListOfPeriod on List<Period> {
         final prevTimingStart = prevTimedPeriod.timing.startTime;
         final timingEnd = timings[i].endTime;
         timing = Timing(startTime: prevTimingStart, endTime: timingEnd);
-        period = (prevTimedPeriod as PeriodWithSubject);
+        period = (prevTimedPeriod.object);
       } else {
         timing = timings[i];
       }

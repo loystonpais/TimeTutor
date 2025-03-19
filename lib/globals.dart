@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -20,6 +21,7 @@ final notificationDetails = NotificationDetails(
 ));
 
 late Function materialPageSetState;
+UniqueKey materialPageKey = UniqueKey();
 
 var logger = Logger();
 var isWeb = kIsWeb;

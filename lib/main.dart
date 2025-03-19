@@ -36,20 +36,20 @@ class AppState extends State<App> {
   @override
   void initState() {
     super.initState();
-    materialPageSetState = () => setState(() {});
+    materialPageSetState = () {
+      setState(() {});
+      print("App state reload");
+    };
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      key: materialPageKey,
       title: 'TimeTutor',
       theme: appSettings.darkTheme
-          ? FlexThemeData.dark(
-              scheme: FlexScheme.values.byName(appSettings.themeName),
-              textTheme: GoogleFonts.oswaldTextTheme())
-          : FlexThemeData.light(
-              scheme: FlexScheme.values.byName(appSettings.themeName),
-              textTheme: GoogleFonts.oswaldTextTheme()),
+          ? FlexThemeData.dark(scheme: FlexScheme.values.byName(appSettings.themeName), textTheme: GoogleFonts.oswaldTextTheme())
+          : FlexThemeData.light(scheme: FlexScheme.values.byName(appSettings.themeName), textTheme: GoogleFonts.oswaldTextTheme()),
       home: const ImmediatePage(title: 'TimeTutor'),
     );
   }
@@ -77,11 +77,7 @@ class _ImmediatePageState extends State<ImmediatePage> {
           } else {
             return FutureBuilder(
               // Single query instead of stream
-              future: Supabase.instance.client
-                  .from("profiles")
-                  .select()
-                  .eq("id", session.user.id)
-                  .maybeSingle(),
+              future: Supabase.instance.client.from("profiles").select().eq("id", session.user.id).maybeSingle(),
               builder: (context, snapshot) {
                 print(snapshot);
                 if (snapshot.connectionState == ConnectionState.waiting) {
