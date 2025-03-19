@@ -1,16 +1,22 @@
-# timetutor
+# TimeTutor
 
-A new Flutter project.
+A timetable management app made using flutter and supabase.
 
-## Getting Started
+# Tools and Frameworks used
+1. Flutter / Dart
+2. Supabase / Postgres SQL Database
+3. Supabse Auth
+4. Several Flutter libraries
+5. Github actions for builds
+6. Android Studio for Emulators (SDK 34)
 
-This project is a starting point for a Flutter application.
+# Features
+1. Fully online
+2. Profiles, Username, Timetable, Classes and Institutions as seperate components
+3. Realtime user setting syncronization
+4. Uinque profile avatar generation
+5. Minimalist theme with customizability
+6. YAML based timetable editing
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+# Screenshots
+ > Yet to be added
