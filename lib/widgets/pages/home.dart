@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:math';
 
@@ -6,6 +7,7 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
@@ -26,7 +28,9 @@ import 'package:timetutor/widgets/pages/timetable_yaml_editor.dart';
 import 'package:timetutor/widgets/timetable_carousel.dart';
 import 'package:timetutor/widgets/timetable_period_countdown.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart' as fln;
+import 'package:typewritertext/typewritertext.dart';
 import 'package:yaml_writer/yaml_writer.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -47,7 +51,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<({Map<String, dynamic> profile, Map<String, dynamic> class_, Map<String, dynamic> institution})> _fetchData() async {
+  Future<({Map<String, dynamic> meta, Map<String, dynamic> profile, Map<String, dynamic> class_, Map<String, dynamic> institution})>
+      _fetchData() async {
+    final meta = await client.from("meta").select().eq("id", metaId).limit(1).single();
     final profile = await client.from("profiles").select().eq("id", client.auth.currentUser!.id).limit(1).maybeSingle();
 
     if (profile == null) {
@@ -67,7 +73,7 @@ class _HomePageState extends State<HomePage> {
 
     Map<String, dynamic> institution = await client.from("institutions").select().eq("id", class_["institution"]).limit(1).single();
 
-    return (profile: profile, class_: class_, institution: institution);
+    return (meta: meta, profile: profile, class_: class_, institution: institution);
   }
 
   Widget _withDraggableHome() {
@@ -79,7 +85,7 @@ class _HomePageState extends State<HomePage> {
             return Loading();
           }
 
-          final (:profile, :class_, :institution) = snapshot.data!;
+          final (:meta, :profile, :class_, :institution) = snapshot.data!;
           print(institution);
 
           Timetable timetable;
@@ -113,6 +119,64 @@ class _HomePageState extends State<HomePage> {
                     });
               });
             }
+          }
+
+          try {
+            if (profile["gemini_key"] != null) {
+              print("Key is ${profile['gemini_key']}");
+              tipModel = GenerativeModel(
+                model: 'gemini-2.0-flash',
+                apiKey: profile["gemini_key"],
+                generationConfig: GenerationConfig(
+                  temperature: 0.2,
+                  topK: 40,
+                  topP: 0.95,
+                  maxOutputTokens: 2000,
+                  responseMimeType: 'application/json',
+                  responseSchema: Schema(
+                    SchemaType.object,
+                    requiredProperties: ["tipDescription"],
+                    properties: {
+                      "tipDescription": Schema(
+                        SchemaType.string,
+                      ),
+                    },
+                  ),
+                ),
+              );
+
+              print("Initialize success");
+            }
+          } catch (e) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  backgroundColor: Colors.redAccent, duration: Duration(seconds: 20), content: Text('Failed to initialize gemini AI: $e')));
+            });
+          }
+
+          try {
+            // if (profile["gemini_key"] != null) {
+            //   print("Key is ${profile['gemini_key']}");
+            //   GeminiAPI _geminiInstance = GeminiAPI(profile["gemini_key"]);
+            //   _geminiInstance.validateKey().then((value) {
+            //     print("API Key has been validated");
+            //     geminiInstance = _geminiInstance;
+            //   }).catchError((e) {
+            //     WidgetsBinding.instance.addPostFrameCallback((_) {
+            //       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            //           backgroundColor: Colors.redAccent,
+            //           duration: Duration(seconds: 20),
+            //           content: Text('Failed to initialize gemini AI: $e')));
+            //     });
+            //   });
+
+            //   print("Initialize success");
+            // }
+          } catch (e) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  backgroundColor: Colors.redAccent, duration: Duration(seconds: 20), content: Text('Failed to initialize gemini AI: $e')));
+            });
           }
 
           Widget expandedBody;
@@ -182,6 +246,46 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ],
                       ),
+                    if (tipModel != null && appSettings.generateAiTip)
+                      FutureBuilder(
+                          future: tipModel!.generateContent([
+                            Content.text("""
+                          ${meta["tip_prompt"]}
+
+                          ${YamlWriter().write(timetable.toEasyJson())}
+
+                          Current day: ${currentDay.name}
+                          """)
+                          ]),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return Center(child: LoadingSmall());
+                            } else if (snapshot.hasError) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                    backgroundColor: Colors.redAccent,
+                                    duration: Duration(seconds: 20),
+                                    content: Text('Failed to initialize gemini AI: ${snapshot.error}')));
+                              });
+                              //return Center(child: Text('Error: ${snapshot.error}'));
+                              return SizedBox.shrink();
+                            } else {
+                              Map<String, dynamic> json = jsonDecode(snapshot.data!.text ?? "{}");
+                              return Column(
+                                children: [
+                                  Center(child: Text("Tip from AI")),
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Center(
+                                      child: TypeWriter.text(json["tipDescription"] ?? 'Hmmm.. Something went wrong I guess.. Sorry..',
+                                          duration: const Duration(milliseconds: 50),
+                                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(0xCC))),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+                          }),
                     InfoBar(
                       color: appSettings.monoColor ? null : Colors.redAccent,
                       onTap: () {},

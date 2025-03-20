@@ -14,3 +14,17 @@ class Loading extends StatelessWidget {
     );
   }
 }
+
+class LoadingSmall extends StatelessWidget {
+  const LoadingSmall({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SpinKitThreeBounce(
+        color: Theme.of(context).primaryColor,
+        size: 10,
+      ),
+    );
+  }
+}

@@ -20,10 +20,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _updateData() async {
-    await client
-        .from("profiles")
-        .update({"app_settings": appSettings.toJson()}).eq(
-            "id", client.auth.currentUser!.id);
+    await client.from("profiles").update({"app_settings": appSettings.toJson()}).eq("id", client.auth.currentUser!.id);
     print("Updated settings");
   }
 
@@ -70,46 +67,51 @@ class _SettingsPageState extends State<SettingsPage> {
                   materialPageSetState();
                 },
                 title: const Text("Mono Color"),
-                description:
-                    Text("Sets everything to the same color as the theme"),
+                description: Text("Sets everything to the same color as the theme"),
               ),
               SettingsTile(
-                  title: Text("Theme"),
-                  description:
-                      Text("Currently set to - ${appSettings.themeName}"),
-                  leading: Icon(Icons.brush),
-                  onPressed: (context) async {
-                    await showDialog(
-                        context: context,
-                        builder: (context) {
-                          return AlertDialog(
-                            title: Center(child: Text("Choose theme")),
-                            content: SizedBox(
-                              height: MediaQuery.of(context).size.width * 0.7,
-                              width: MediaQuery.of(context).size.height * 0.3,
-                              child: GridView.count(
-                                  padding: EdgeInsets.all(4.0),
-                                  crossAxisCount: 3,
-                                  children: [
-                                    for (final theme in FlexScheme.values)
-                                      FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: TextButton(
-                                            onPressed: () {
-                                              setState(() {
-                                                appSettings.themeName =
-                                                    theme.name;
-                                              });
-                                              materialPageSetState();
-                                              Navigator.of(context).pop();
-                                            },
-                                            child: Text(theme.name),
-                                          ))
-                                  ]),
-                            ),
-                          );
-                        });
-                  }),
+                title: Text("Theme"),
+                description: Text("Currently set to - ${appSettings.themeName}"),
+                leading: Icon(Icons.brush),
+                onPressed: (context) async {
+                  await showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: Center(child: Text("Choose theme")),
+                          content: SizedBox(
+                            height: MediaQuery.of(context).size.width * 0.7,
+                            width: MediaQuery.of(context).size.height * 0.3,
+                            child: GridView.count(padding: EdgeInsets.all(4.0), crossAxisCount: 3, children: [
+                              for (final theme in FlexScheme.values)
+                                FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: TextButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          appSettings.themeName = theme.name;
+                                        });
+                                        materialPageSetState();
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: Text(theme.name),
+                                    ))
+                            ]),
+                          ),
+                        );
+                      });
+                },
+              ),
+              SettingsTile.switchTile(
+                initialValue: appSettings.generateAiTip,
+                leading: Icon(Icons.api),
+                onToggle: (value) {
+                  setState(() {
+                    appSettings.generateAiTip = value;
+                  });
+                },
+                title: const Text("Enable AI Tips"),
+              ),
             ],
           ),
         ],

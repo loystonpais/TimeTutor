@@ -206,6 +206,78 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   InfoBar(
                     onTap: () async {
+                      await showDialog(
+                        context: context,
+                        builder: (context) {
+                          final _formKey = GlobalKey<FormState>();
+                          final TextEditingController _apiKeyController = TextEditingController();
+
+                          return AlertDialog(
+                            title: Center(child: Text("Set API Key")),
+                            content: Form(
+                              key: _formKey,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextFormField(
+                                    controller: _apiKeyController,
+                                    decoration: InputDecoration(labelText: "API Key"),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return null;
+                                      }
+                                      if (value.length > 100) {
+                                        return "Key cannot have more than 100 characters";
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: 10),
+                                  TextButton(
+                                    onPressed: () {
+                                      if (_formKey.currentState!.validate()) {
+                                        client
+                                            .from("profiles")
+                                            .update({
+                                              "gemini_key": _apiKeyController.text.isEmpty ? null : _apiKeyController.text,
+                                            })
+                                            .eq("id", client.auth.currentUser!.id)
+                                            .select()
+                                            .single()
+                                            .then((value) {
+                                              Navigator.of(context).pop();
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(SnackBar(content: Text('Successfully set the API Key')));
+                                            }, onError: (error) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(SnackBar(content: Text('Failed to set the API Key')));
+                                            });
+                                      }
+                                    },
+                                    child: Text("Set"),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+
+                      setState(() {});
+                    },
+                    color: appSettings.monoColor ? null : Colors.yellow,
+                    child: Row(
+                      children: [
+                        Icon(Icons.api),
+                        SizedBox(width: 12),
+                        Text('Set Gemini API Key'),
+                        SizedBox(width: 12),
+                        if (profile["gemini_key"] != null) Icon(Icons.check),
+                      ],
+                    ),
+                  ),
+                  InfoBar(
+                    onTap: () async {
                       await Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => SettingsPage()),

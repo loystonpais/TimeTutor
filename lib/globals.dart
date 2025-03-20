@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -20,6 +21,8 @@ final notificationDetails = NotificationDetails(
   priority: Priority.high,
 ));
 
+final int metaId = 1;
+
 late Function materialPageSetState;
 UniqueKey materialPageKey = UniqueKey();
 
@@ -34,6 +37,8 @@ late UserProfile? userProfile;
 late Class? userJoinedClass;
 late Timetable? joinedClassTimetable;
 late Institution userJoinedInstitution;
+
+GenerativeModel? tipModel;
 
 AppSettings appSettings = AppSettings();
 
